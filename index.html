@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>Zaiqa - Food Delivery</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#f0f0f0;display:flex;justify-content:center;font-family:'Nunito',sans-serif;}
+::-webkit-scrollbar{width:0;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState } = React;
+
+const restaurants = [
+  { id: 1, name: "Biryani Blues", cuisine: "Biryani, Mughlai", rating: 4.5, time: "25-30 min", price: "₹200 for two", image: "🍛", tag: "Bestseller", category: "Biryani" },
+  { id: 2, name: "Pizza Palace", cuisine: "Pizza, Italian", rating: 4.3, time: "30-40 min", price: "₹350 for two", image: "🍕", tag: "Trending", category: "Pizza" },
+  { id: 3, name: "Burger Barn", cuisine: "Burgers, Fast Food", rating: 4.1, time: "20-25 min", price: "₹150 for two", image: "🍔", tag: "New", category: "Burgers" },
+  { id: 4, name: "Dosa Delight", cuisine: "South Indian", rating: 4.6, time: "15-20 min", price: "₹120 for two", image: "🥞", tag: "Popular", category: "South Indian" },
+  { id: 5, name: "Noodle Nest", cuisine: "Chinese, Asian", rating: 4.2, time: "25-35 min", price: "₹220 for two", image: "🍜", tag: "Bestseller", category: "Chinese" },
+  { id: 6, name: "Sushi Station", cuisine: "Japanese, Sushi", rating: 4.7, time: "35-45 min", price: "₹600 for two", image: "🍱", tag: "Premium", category: "Sushi" },
+  { id: 7, name: "Taco Town", cuisine: "Mexican, Wraps", rating: 4.0, time: "20-30 min", price: "₹180 for two", image: "🌮", tag: "New", category: "Mexican" },
+  { id: 8, name: "Kebab King", cuisine: "Kebabs, Mughlai", rating: 4.4, time: "30-40 min", price: "₹300 for two", image: "🍢", tag: "Trending", category: "Kebabs" },
+];
+
+const menuItems = {
+  1: [
+    { id: 101, name: "Chicken Biryani", desc: "Aromatic basmati rice with tender chicken", price: 199, veg: false, bestseller: true },
+    { id: 102, name: "Mutton Biryani", desc: "Slow-cooked mutton with fragrant spices", price: 279, veg: false, bestseller: false },
+    { id: 103, name: "Veg Biryani", desc: "Mixed vegetables in basmati rice", price: 149, veg: true, bestseller: false },
+    { id: 104, name: "Raita", desc: "Chilled yogurt with cucumber", price: 49, veg: true, bestseller: false },
+  ],
+  2: [
+    { id: 201, name: "Margherita Pizza", desc: "Classic tomato sauce with mozzarella", price: 249, veg: true, bestseller: true },
+    { id: 202, name: "Pepperoni Pizza", desc: "Loaded with spicy pepperoni slices", price: 349, veg: false, bestseller: false },
+    { id: 203, name: "BBQ Chicken Pizza", desc: "Smoky BBQ sauce with grilled chicken", price: 329, veg: false, bestseller: true },
+    { id: 204, name: "Garlic Bread", desc: "Toasted bread with herb butter", price: 99, veg: true, bestseller: false },
+  ],
+  3: [
+    { id: 301, name: "Classic Burger", desc: "Beef patty with lettuce and cheese", price: 149, veg: false, bestseller: true },
+    { id: 302, name: "Veggie Burger", desc: "Crispy veggie patty with sauces", price: 119, veg: true, bestseller: false },
+    { id: 303, name: "Double Smash", desc: "Double beef smash patty burger", price: 199, veg: false, bestseller: true },
+    { id: 304, name: "Fries", desc: "Crispy golden french fries", price: 79, veg: true, bestseller: false },
+  ],
+  4: [
+    { id: 401, name: "Masala Dosa", desc: "Crispy dosa with spiced potato filling", price: 99, veg: true, bestseller: true },
+    { id: 402, name: "Idli Sambar", desc: "Soft idlis with hot sambar", price: 79, veg: true, bestseller: false },
+    { id: 403, name: "Vada", desc: "Crispy lentil donuts with chutney", price: 69, veg: true, bestseller: false },
+  ],
+  5: [
+    { id: 501, name: "Veg Noodles", desc: "Stir-fried noodles with vegetables", price: 149, veg: true, bestseller: false },
+    { id: 502, name: "Chicken Fried Rice", desc: "Wok-tossed rice with chicken", price: 179, veg: false, bestseller: true },
+    { id: 503, name: "Manchurian", desc: "Crispy balls in spicy sauce", price: 159, veg: true, bestseller: false },
+  ],
+};
+
+const categories = ["All", "Biryani", "Pizza", "Burgers", "South Indian", "Chinese", "Sushi", "Mexican", "Kebabs"];
+
+const dishTypes = [
+  { name: "Biryani", emoji: "🍛", color: "#FF6B35" },
+  { name: "Pizza", emoji: "🍕", color: "#E74C3C" },
+  { name: "Burgers", emoji: "🍔", color: "#F39C12" },
+  { name: "Sushi", emoji: "🍱", color: "#1ABC9C" },
+  { name: "Noodles", emoji: "🍜", color: "#9B59B6" },
+  { name: "Tacos", emoji: "🌮", color: "#27AE60" },
+  { name: "Ice Cream", emoji: "🍦", color: "#3498DB" },
+  { name: "Desserts", emoji: "🍰", color: "#E91E63" },
+  { name: "Salads", emoji: "🥗", color: "#4CAF50" },
+  { name: "Drinks", emoji: "🥤", color: "#FF5722" },
+];
+
+const orderHistory = [
+  { id: "ORD001", restaurant: "Biryani Blues", items: ["Chicken Biryani x1", "Raita x1"], total: 248, date: "2 Mar", status: "Delivered" },
+  { id: "ORD002", restaurant: "Pizza Palace", items: ["Margherita Pizza x1", "Garlic Bread x1"], total: 348, date: "28 Feb", status: "Delivered" },
+];
+
+const S = {
+  app: { fontFamily:"'Nunito',sans-serif", backgroundColor:"#FFF8F5", minHeight:"100vh", width:"100%", maxWidth:430, position:"relative" },
+  topBar: { backgroundColor:"#FF4D00", padding:"16px 20px 14px", color:"#fff" },
+  bottomNav: { position:"fixed", bottom:0, left:"50%", transform:"translateX(-50%)", width:"100%", maxWidth:430, backgroundColor:"#fff", borderTop:"1px solid #eee", display:"flex", justifyContent:"space-around", padding:"10px 0 14px", zIndex:100 },
+  navItem: (a) => ({ display:"flex", flexDirection:"column", alignItems:"center", gap:2, cursor:"pointer", color:a?"#FF4D00":"#999", fontSize:11, fontWeight:a?700:500 }),
+  card: { backgroundColor:"#fff", borderRadius:16, overflow:"hidden", boxShadow:"0 2px 12px rgba(0,0,0,0.08)", cursor:"pointer" },
+  badge: (c) => ({ backgroundColor:c||"#FF4D00", color:"#fff", fontSize:10, fontWeight:700, padding:"2px 8px", borderRadius:20, display:"inline-block" }),
+  btn: (f) => ({ backgroundColor:"#FF4D00", color:"#fff", border:"none", borderRadius:12, padding:"14px 24px", fontWeight:700, fontSize:15, cursor:"pointer", width:f?"100%":"auto" }),
+  input: { width:"100%", padding:"12px 16px", borderRadius:12, border:"1.5px solid #eee", fontSize:14, outline:"none", backgroundColor:"#F9F9F9" },
+  tag: (c) => ({ fontSize:11, color:c||"#FF4D00", fontWeight:700, backgroundColor:c?c+"22":"#FF4D0022", padding:"2px 8px", borderRadius:20 }),
+};
+
+function BottomNav({ screen, setScreen, cartCount }) {
+  return (
+    <div style={S.bottomNav}>
+      {[["🏠","Home","home"],["🍽️","Dishes","dishes"],["🛒","Cart","cart"],["📦","Orders","tracking"],["👤","Profile","profile"]].map(([icon,label,s]) => (
+        <div key={s} style={S.navItem(screen===s)} onClick={() => setScreen(s)}>
+          <div style={{ position:"relative" }}>
+            <span style={{ fontSize:22 }}>{icon}</span>
+            {s==="cart" && cartCount>0 && (
+              <span style={{ position:"absolute", top:-6, right:-8, backgroundColor:"#FF4D00", color:"#fff", borderRadius:"50%", width:16, height:16, fontSize:10, display:"flex", alignItems:"center", justifyContent:"center", fontWeight:700 }}>{cartCount}</span>
+            )}
+          </div>
+          <span>{label}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function App() {
+  const [screen, setScreen] = useState("home");
+  const [selectedRestaurant, setSelectedRestaurant] = useState(null);
+  const [cart, setCart] = useState({});
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [orderPlaced, setOrderPlaced] = useState(false);
+  const [trackingStep, setTrackingStep] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const cartCount = Object.values(cart).reduce((a,b)=>a+b,0);
+
+  const allCartTotal = Object.entries(cart).reduce((sum,[id,qty]) => {
+    for (const items of Object.values(menuItems)) {
+      const item = items.find(i => i.id === parseInt(id));
+      if (item) return sum + item.price * qty;
+    }
+    return sum;
+  }, 0);
+
+  const addToCart = (itemId) => setCart(p => ({...p,[itemId]:(p[itemId]||0)+1}));
+  const removeFromCart = (itemId) => setCart(p => {
+    const u={...p};
+    if(u[itemId]>1) u[itemId]--; else delete u[itemId];
+    return u;
+  });
+
+  const filteredRestaurants = restaurants.filter(r => {
+    const matchCat = activeCategory==="All" || r.category===activeCategory;
+    const matchSearch = r.name.toLowerCase().includes(searchQuery.toLowerCase()) || r.cuisine.toLowerCase().includes(searchQuery.toLowerCase());
+    return matchCat && matchSearch;
+  });
+
+  const placeOrder = () => {
+    setOrderPlaced(true);
+    setCart({});
+    setTrackingStep(0);
+    setScreen("tracking");
+    let step=0;
+    const interval=setInterval(()=>{ step++; setTrackingStep(step); if(step>=4) clearInterval(interval); },2000);
+  };
+
+  // HOME
+  if (screen==="home") return (
+    <div style={S.app}>
+      <div style={{...S.topBar, paddingBottom:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div>
+            <div style={{fontSize:24,fontWeight:900,letterSpacing:1}}>🍽️ Zaiqa</div>
+            <div style={{fontSize:11,opacity:0.85}}>📍 Coimbatore, Tamil Nadu ▾</div>
+          </div>
+          <div style={{fontSize:28,cursor:"pointer"}} onClick={()=>setScreen("profile")}>👤</div>
+        </div>
+        <div style={{marginTop:14,position:"relative"}}>
+          <input style={{...S.input,paddingLeft:42}} placeholder="Search restaurants, dishes..." value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}/>
+          <span style={{position:"absolute",left:14,top:"50%",transform:"translateY(-50%)",fontSize:18}}>🔍</span>
+        </div>
+      </div>
+
+      <div style={{padding:"16px 16px 90px",overflowY:"auto",maxHeight:"calc(100vh - 130px)"}}>
+        {/* Banner */}
+        <div style={{background:"linear-gradient(135deg,#FF4D00,#FF8C00)",borderRadius:20,padding:"20px",color:"#fff",marginBottom:24,position:"relative",overflow:"hidden"}}>
+          <div style={{fontSize:20,fontWeight:900}}>🎉 50% OFF</div>
+          <div style={{fontSize:13,opacity:0.9,marginTop:4}}>On your first 3 orders! Use code <strong>ZAIQA50</strong></div>
+          <div style={{fontSize:50,position:"absolute",right:16,top:"50%",transform:"translateY(-50%)",opacity:0.25}}>🛵</div>
+        </div>
+
+        {/* Dish Types */}
+        <div style={{marginBottom:24}}>
+          <div style={{fontSize:18,fontWeight:800,marginBottom:14,color:"#1A1A1A"}}>What's on your mind?</div>
+          <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
+            {dishTypes.map(d => (
+              <div key={d.name} onClick={()=>{setActiveCategory(d.name==="Noodles"?"Chinese":d.name);}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,cursor:"pointer"}}>
+                <div style={{width:50,height:50,borderRadius:16,backgroundColor:d.color+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,border:`2px solid ${d.color}30`}}>{d.emoji}</div>
+                <div style={{fontSize:10,fontWeight:700,color:"#444",textAlign:"center"}}>{d.name}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Category Filter */}
+        <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:8,marginBottom:20,scrollbarWidth:"none"}}>
+          {categories.map(cat => (
+            <div key={cat} onClick={()=>setActiveCategory(cat)} style={{flexShrink:0,padding:"8px 16px",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer",backgroundColor:activeCategory===cat?"#FF4D00":"#fff",color:activeCategory===cat?"#fff":"#666",border:`1.5px solid ${activeCategory===cat?"#FF4D00":"#eee"}`}}>{cat}</div>
+          ))}
+        </div>
+
+        {/* Restaurants */}
+        <div style={{fontSize:16,fontWeight:800,marginBottom:14,color:"#1A1A1A"}}>{filteredRestaurants.length} Restaurants Near You</div>
+        <div style={{display:"flex",flexDirection:"column",gap:16}}>
+          {filteredRestaurants.map(r => (
+            <div key={r.id} style={S.card} onClick={()=>{setSelectedRestaurant(r);setScreen("menu");}}>
+              <div style={{backgroundColor:"#FFF3E0",height:130,display:"flex",alignItems:"center",justifyContent:"center",fontSize:65,position:"relative"}}>
+                {r.image}
+                <div style={{position:"absolute",top:10,left:10,...S.badge()}}>{r.tag}</div>
+              </div>
+              <div style={{padding:"12px 14px"}}>
+                <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div style={{fontSize:16,fontWeight:800}}>{r.name}</div>
+                  <div style={{display:"flex",alignItems:"center",gap:4,backgroundColor:"#22C55E",color:"#fff",padding:"3px 8px",borderRadius:8,fontSize:13,fontWeight:700}}>⭐ {r.rating}</div>
+                </div>
+                <div style={{fontSize:12,color:"#888",marginTop:3}}>{r.cuisine}</div>
+                <div style={{display:"flex",justifyContent:"space-between",marginTop:10,fontSize:12,color:"#666",borderTop:"1px solid #f3f3f3",paddingTop:10}}>
+                  <span>🕐 {r.time}</span><span>💰 {r.price}</span><span>🛵 Free</span>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <BottomNav screen={screen} setScreen={setScreen} cartCount={cartCount}/>
+    </div>
+  );
+
+  // DISHES
+  if (screen==="dishes") return (
+    <div style={S.app}>
+      <div style={S.topBar}>
+        <div style={{fontSize:20,fontWeight:800}}>🍽️ Explore Dishes</div>
+        <div style={{fontSize:13,opacity:0.85,marginTop:2}}>Pick your craving</div>
+      </div>
+      <div style={{padding:"16px 16px 90px",overflowY:"auto",maxHeight:"calc(100vh - 80px)"}}>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
+          {dishTypes.map(d => (
+            <div key={d.name} onClick={()=>{setActiveCategory(d.name==="Noodles"?"Chinese":d.name);setScreen("home");}} style={{...S.card,padding:20,display:"flex",flexDirection:"column",alignItems:"center",gap:10,backgroundColor:d.color+"15",border:`2px solid ${d.color}30`}}>
+              <div style={{fontSize:46}}>{d.emoji}</div>
+              <div style={{fontSize:15,fontWeight:800,color:"#1A1A1A"}}>{d.name}</div>
+              <div style={{fontSize:11,color:"#888"}}>{Math.floor(Math.random()*8)+2} restaurants</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <BottomNav screen={screen} setScreen={setScreen} cartCount={cartCount}/>
+    </div>
+  );
+
+  // MENU
+  if (screen==="menu" && selectedRestaurant) {
+    const items = menuItems[selectedRestaurant.id] || [];
+    const menuCartTotal = items.reduce((sum,item)=>sum+(cart[item.id]||0)*item.price,0);
+    return (
+      <div style={S.app}>
+        <div style={{...S.topBar,display:"flex",alignItems:"center",gap:14}}>
+          <span style={{fontSize:24,cursor:"pointer"}} onClick={()=>setScreen("home")}>←</span>
+          <div>
+            <div style={{fontSize:18,fontWeight:800}}>{selectedRestaurant.name}</div>
+            <div style={{fontSize:12,opacity:0.85}}>{selectedRestaurant.cuisine}</div>
+          </div>
+        </div>
+        <div style={{backgroundColor:"#fff",padding:"12px 20px",borderBottom:"1px solid #f0f0f0",display:"flex",gap:20,fontSize:13}}>
+          <span>⭐ {selectedRestaurant.rating}</span>
+          <span>🕐 {selectedRestaurant.time}</span>
+          <span>💰 {selectedRestaurant.price}</span>
+        </div>
+        <div style={{padding:"16px 16px 120px",overflowY:"auto",maxHeight:"calc(100vh - 140px)"}}>
+          <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>🍽️ Menu</div>
+          {items.map(item => (
+            <div key={item.id} style={{...S.card,padding:16,marginBottom:14,display:"flex",gap:14}}>
+              <div style={{flex:1}}>
+                <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:4}}>
+                  <div style={{width:14,height:14,borderRadius:2,border:`2px solid ${item.veg?"#22C55E":"#FF4D00"}`,display:"flex",alignItems:"center",justifyContent:"center"}}>
+                    <div style={{width:6,height:6,borderRadius:"50%",backgroundColor:item.veg?"#22C55E":"#FF4D00"}}/>
+                  </div>
+                  {item.bestseller && <span style={S.tag("#FF8C00")}>🔥 Bestseller</span>}
+                </div>
+                <div style={{fontWeight:700,fontSize:15}}>{item.name}</div>
+                <div style={{fontSize:12,color:"#888",marginTop:3}}>{item.desc}</div>
+                <div style={{fontWeight:800,fontSize:16,marginTop:8}}>₹{item.price}</div>
+              </div>
+              <div style={{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"flex-end",gap:6}}>
+                <div style={{fontSize:34}}>{selectedRestaurant.image}</div>
+                {cart[item.id] ? (
+                  <div style={{display:"flex",alignItems:"center",gap:10,backgroundColor:"#FF4D00",borderRadius:10,padding:"6px 12px"}}>
+                    <span style={{color:"#fff",fontWeight:800,cursor:"pointer",fontSize:18}} onClick={()=>removeFromCart(item.id)}>−</span>
+                    <span style={{color:"#fff",fontWeight:800}}>{cart[item.id]}</span>
+                    <span style={{color:"#fff",fontWeight:800,cursor:"pointer",fontSize:18}} onClick={()=>addToCart(item.id)}>+</span>
+                  </div>
+                ) : (
+                  <button style={S.btn()} onClick={()=>addToCart(item.id)}>ADD</button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        {menuCartTotal>0 && (
+          <div style={{position:"fixed",bottom:20,left:"50%",transform:"translateX(-50%)",width:"90%",maxWidth:390}}>
+            <button style={{...S.btn(true),borderRadius:16,padding:16,display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={()=>setScreen("cart")}>
+              <span>{Object.values(cart).reduce((a,b)=>a+b,0)} items</span>
+              <span>View Cart →</span>
+              <span>₹{menuCartTotal}</span>
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // CART
+  if (screen==="cart") {
+    const cartItems=[];
+    for (const items of Object.values(menuItems)) {
+      for (const item of items) {
+        if(cart[item.id]) cartItems.push({...item,qty:cart[item.id]});
+      }
+    }
+    const tax = Math.round(allCartTotal*0.05);
+    return (
+      <div style={S.app}>
+        <div style={{...S.topBar,display:"flex",alignItems:"center",gap:14}}>
+          <span style={{fontSize:24,cursor:"pointer"}} onClick={()=>setScreen("home")}>←</span>
+          <div style={{fontSize:20,fontWeight:800}}>🛒 Your Cart</div>
+        </div>
+        <div style={{padding:"16px 16px 100px",overflowY:"auto",maxHeight:"calc(100vh - 80px)"}}>
+          {cartItems.length===0 ? (
+            <div style={{textAlign:"center",padding:"60px 20px"}}>
+              <div style={{fontSize:80}}>🛒</div>
+              <div style={{fontSize:20,fontWeight:800,marginTop:16}}>Your cart is empty</div>
+              <div style={{fontSize:14,color:"#888",marginTop:8}}>Add items to get started</div>
+              <button style={{...S.btn(),marginTop:24}} onClick={()=>setScreen("home")}>Browse Restaurants</button>
+            </div>
+          ) : (
+            <>
+              {cartItems.map(item => (
+                <div key={item.id} style={{...S.card,padding:16,marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                  <div>
+                    <div style={{fontWeight:700,fontSize:15}}>{item.name}</div>
+                    <div style={{fontSize:13,color:"#888",marginTop:2}}>₹{item.price} each</div>
+                  </div>
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <div style={{display:"flex",alignItems:"center",gap:10,backgroundColor:"#FF4D00",borderRadius:10,padding:"6px 12px"}}>
+                      <span style={{color:"#fff",fontWeight:800,cursor:"pointer",fontSize:18}} onClick={()=>removeFromCart(item.id)}>−</span>
+                      <span style={{color:"#fff",fontWeight:800}}>{item.qty}</span>
+                      <span style={{color:"#fff",fontWeight:800,cursor:"pointer",fontSize:18}} onClick={()=>addToCart(item.id)}>+</span>
+                    </div>
+                    <div style={{fontWeight:800,fontSize:15,minWidth:55,textAlign:"right"}}>₹{item.price*item.qty}</div>
+                  </div>
+                </div>
+              ))}
+              <div style={{...S.card,padding:16,marginTop:16}}>
+                <div style={{fontSize:15,fontWeight:800,marginBottom:12}}>Bill Summary</div>
+                {[["Item Total",`₹${allCartTotal}`],["Delivery Fee","FREE 🎉"],["Platform Fee","₹5"],["Taxes",`₹${tax}`]].map(([k,v])=>(
+                  <div key={k} style={{display:"flex",justifyContent:"space-between",marginBottom:8,fontSize:14,color:"#555"}}>
+                    <span>{k}</span><span>{v}</span>
+                  </div>
+                ))}
+                <div style={{borderTop:"1.5px dashed #eee",paddingTop:10,marginTop:8,display:"flex",justifyContent:"space-between",fontWeight:800,fontSize:16}}>
+                  <span>Total</span><span>₹{allCartTotal+5+tax}</span>
+                </div>
+              </div>
+              <div style={{marginTop:14,...S.card,padding:14}}>
+                <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>🏷️ Apply Coupon</div>
+                <div style={{display:"flex",gap:10}}>
+                  <input style={{...S.input,flex:1}} placeholder="Try ZAIQA50"/>
+                  <button style={{...S.btn(),borderRadius:10,padding:"12px 16px",fontSize:13}}>Apply</button>
+                </div>
+              </div>
+              <div style={{height:80}}/>
+              <div style={{position:"fixed",bottom:20,left:"50%",transform:"translateX(-50%)",width:"90%",maxWidth:390}}>
+                <button style={{...S.btn(true),borderRadius:16,padding:16}} onClick={placeOrder}>
+                  Place Order • ₹{allCartTotal+5+tax}
+                </button>
+              </div>
+            </>
+          )}
+        </div>
+        <BottomNav screen={screen} setScreen={setScreen} cartCount={cartCount}/>
+      </div>
+    );
+  }
+
+  // TRACKING
+  if (screen==="tracking") {
+    const steps=[
+      {icon:"✅",label:"Order Placed",desc:"Your order has been received"},
+      {icon:"👨‍🍳",label:"Preparing",desc:"Chef is cooking your food"},
+      {icon:"🛵",label:"On the Way",desc:"Delivery partner is coming"},
+      {icon:"🏠",label:"Delivered",desc:"Enjoy your meal!"},
+    ];
+    return (
+      <div style={S.app}>
+        <div style={{...S.topBar,display:"flex",alignItems:"center",gap:14}}>
+          <span style={{fontSize:24,cursor:"pointer"}} onClick={()=>setScreen("home")}>←</span>
+          <div style={{fontSize:20,fontWeight:800}}>📦 Track Order</div>
+        </div>
+        <div style={{padding:"20px 16px 90px",overflowY:"auto",maxHeight:"calc(100vh - 80px)"}}>
+          {orderPlaced ? (
+            <>
+              <div style={{...S.card,padding:20,marginBottom:20,textAlign:"center"}}>
+                <div style={{fontSize:48,marginBottom:10}}>🛵</div>
+                <div style={{fontSize:18,fontWeight:800}}>Order Confirmed! 🎉</div>
+                <div style={{fontSize:14,color:"#888",marginTop:4}}>Est. delivery: 25-30 minutes</div>
+                <div style={{marginTop:12,backgroundColor:"#FFF3E0",borderRadius:12,padding:"10px 16px",fontSize:13,color:"#FF8C00",fontWeight:700}}>
+                  {trackingStep<4?"Live Tracking Active 🟢":"✅ Order Delivered!"}
+                </div>
+              </div>
+              <div style={{...S.card,padding:20}}>
+                {steps.map((step,i)=>(
+                  <div key={i} style={{display:"flex",gap:16,alignItems:"flex-start",marginBottom:i<steps.length-1?20:0}}>
+                    <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
+                      <div style={{width:44,height:44,borderRadius:"50%",backgroundColor:i<=trackingStep?"#FF4D00":"#F3F4F6",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,transition:"all 0.3s"}}>{step.icon}</div>
+                      {i<steps.length-1 && <div style={{width:2,height:28,backgroundColor:i<trackingStep?"#FF4D00":"#eee",marginTop:4,transition:"all 0.3s"}}/>}
+                    </div>
+                    <div style={{paddingTop:10}}>
+                      <div style={{fontWeight:800,fontSize:14,color:i<=trackingStep?"#1A1A1A":"#999"}}>{step.label}</div>
+                      <div style={{fontSize:12,color:"#aaa",marginTop:2}}>{step.desc}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          ) : (
+            <>
+              <div style={{fontSize:18,fontWeight:800,marginBottom:14}}>Order History</div>
+              {orderHistory.map(order=>(
+                <div key={order.id} style={{...S.card,padding:16,marginBottom:12}}>
+                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+                    <div style={{fontWeight:800,fontSize:15}}>{order.restaurant}</div>
+                    <span style={S.badge("#22C55E")}>{order.status}</span>
+                  </div>
+                  <div style={{fontSize:12,color:"#888",marginTop:4}}>{order.items.join(", ")}</div>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:10,fontSize:13}}>
+                    <span style={{color:"#888"}}>{order.date}</span>
+                    <span style={{fontWeight:800}}>₹{order.total}</span>
+                  </div>
+                  <button style={{...S.btn(true),marginTop:12,borderRadius:10,padding:10,fontSize:13}}>Reorder</button>
+                </div>
+              ))}
+            </>
+          )}
+        </div>
+        <BottomNav screen={screen} setScreen={setScreen} cartCount={cartCount}/>
+      </div>
+    );
+  }
+
+  // PROFILE
+  if (screen==="profile") return (
+    <div style={S.app}>
+      <div style={S.topBar}>
+        <div style={{fontSize:20,fontWeight:800}}>👤 My Profile</div>
+      </div>
+      <div style={{padding:"20px 16px 90px",overflowY:"auto",maxHeight:"calc(100vh - 80px)"}}>
+        <div style={{display:"flex",alignItems:"center",gap:16,...S.card,padding:20,marginBottom:20}}>
+          <div style={{width:64,height:64,borderRadius:"50%",backgroundColor:"#FF4D0020",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,border:"3px solid #FF4D00"}}>✈️</div>
+          <div>
+            <div style={{fontSize:18,fontWeight:800}}>Mohammed Faizan Z</div>
+            <div style={{fontSize:13,color:"#888"}}>faizan@email.com</div>
+            <div style={{fontSize:12,color:"#FF4D00",fontWeight:700,marginTop:4}}>⭐ Gold Member</div>
+          </div>
+        </div>
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:12,marginBottom:20}}>
+          {[["12","Orders"],["4.8","Rating"],["₹2,400","Saved"]].map(([val,label])=>(
+            <div key={label} style={{...S.card,padding:14,textAlign:"center"}}>
+              <div style={{fontSize:20,fontWeight:900,color:"#FF4D00"}}>{val}</div>
+              <div style={{fontSize:11,color:"#888",marginTop:2}}>{label}</div>
+            </div>
+          ))}
+        </div>
+        {[["📍","Saved Addresses","Home, Office, College"],["❤️","Favourites","6 restaurants saved"],["💳","Payment Methods","UPI, Card added"],["🎁","Offers & Rewards","2 coupons available"],["🔔","Notifications","All enabled"],["🆘","Help & Support","24/7 available"],["⚙️","Settings","Account settings"],["🚪","Logout","See you soon!"]].map(([icon,title,sub])=>(
+          <div key={title} style={{...S.card,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:14}}>
+            <span style={{fontSize:22}}>{icon}</span>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:14}}>{title}</div>
+              <div style={{fontSize:12,color:"#aaa",marginTop:1}}>{sub}</div>
+            </div>
+            <span style={{color:"#ccc",fontSize:18}}>›</span>
+          </div>
+        ))}
+      </div>
+      <BottomNav screen={screen} setScreen={setScreen} cartCount={cartCount}/>
+    </div>
+  );
+
+  return null;
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+</script>
+</body>
+</html>
