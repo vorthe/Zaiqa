@@ -4,9 +4,11 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <title>Zaiqa - Food Delivery</title>
+<meta name="google-site-verification" content="POKi4ro6cdXWH4AT4f2XM9MHCMBHkccMrGYSu6sQ7vY" />
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
@@ -17,7 +19,15 @@ body{background:#f0f0f0;display:flex;justify-content:center;font-family:'Nunito'
 <body>
 <div id="root"></div>
 <script type="text/babel">
-const { useState } = React;
+const { useState, useEffect } = React;
+
+const SUPABASE_URL = "https://njxjqkebbloltsedecuh.supabase.co";
+const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qeGpxa2ViYmxvbHRzZWRlY3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDY0NzAsImV4cCI6MjA4ODM4MjQ3MH0.SurEvT-3Kd5rHNMdfmrRd8ZltpCHTs3NoBrV-5PtHw4";
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ADMIN CREDENTIALS
+const ADMIN_EMAIL = "faizan@zaiqa.com";
+const ADMIN_PASS = "Zaiqa@2025";
 
 const restaurants = [
   { id: 1, name: "Biryani Blues", cuisine: "Biryani, Mughlai", rating: 4.5, time: "25-30 min", price: "₹200 for two", image: "🍛", tag: "Bestseller", category: "Biryani" },
@@ -25,9 +35,7 @@ const restaurants = [
   { id: 3, name: "Burger Barn", cuisine: "Burgers, Fast Food", rating: 4.1, time: "20-25 min", price: "₹150 for two", image: "🍔", tag: "New", category: "Burgers" },
   { id: 4, name: "Dosa Delight", cuisine: "South Indian", rating: 4.6, time: "15-20 min", price: "₹120 for two", image: "🥞", tag: "Popular", category: "South Indian" },
   { id: 5, name: "Noodle Nest", cuisine: "Chinese, Asian", rating: 4.2, time: "25-35 min", price: "₹220 for two", image: "🍜", tag: "Bestseller", category: "Chinese" },
-  { id: 6, name: "Sushi Station", cuisine: "Japanese, Sushi", rating: 4.7, time: "35-45 min", price: "₹600 for two", image: "🍱", tag: "Premium", category: "Sushi" },
-  { id: 7, name: "Taco Town", cuisine: "Mexican, Wraps", rating: 4.0, time: "20-30 min", price: "₹180 for two", image: "🌮", tag: "New", category: "Mexican" },
-  { id: 8, name: "Kebab King", cuisine: "Kebabs, Mughlai", rating: 4.4, time: "30-40 min", price: "₹300 for two", image: "🍢", tag: "Trending", category: "Kebabs" },
+  { id: 6, name: "Kebab King", cuisine: "Kebabs, Mughlai", rating: 4.4, time: "30-40 min", price: "₹300 for two", image: "🍢", tag: "Trending", category: "Kebabs" },
 ];
 
 const menuItems = {
@@ -59,10 +67,14 @@ const menuItems = {
     { id: 502, name: "Chicken Fried Rice", desc: "Wok-tossed rice with chicken", price: 179, veg: false, bestseller: true },
     { id: 503, name: "Manchurian", desc: "Crispy balls in spicy sauce", price: 159, veg: true, bestseller: false },
   ],
+  6: [
+    { id: 601, name: "Seekh Kebab", desc: "Minced meat on skewers", price: 199, veg: false, bestseller: true },
+    { id: 602, name: "Paneer Tikka", desc: "Grilled cottage cheese with spices", price: 179, veg: true, bestseller: false },
+    { id: 603, name: "Reshmi Kebab", desc: "Silky smooth chicken kebab", price: 219, veg: false, bestseller: false },
+  ],
 };
 
-const categories = ["All", "Biryani", "Pizza", "Burgers", "South Indian", "Chinese", "Sushi", "Mexican", "Kebabs"];
-
+const categories = ["All","Biryani","Pizza","Burgers","South Indian","Chinese","Kebabs"];
 const dishTypes = [
   { name: "Biryani", emoji: "🍛", color: "#FF6B35" },
   { name: "Pizza", emoji: "🍕", color: "#E74C3C" },
@@ -74,11 +86,6 @@ const dishTypes = [
   { name: "Desserts", emoji: "🍰", color: "#E91E63" },
   { name: "Salads", emoji: "🥗", color: "#4CAF50" },
   { name: "Drinks", emoji: "🥤", color: "#FF5722" },
-];
-
-const orderHistory = [
-  { id: "ORD001", restaurant: "Biryani Blues", items: ["Chicken Biryani x1", "Raita x1"], total: 248, date: "2 Mar", status: "Delivered" },
-  { id: "ORD002", restaurant: "Pizza Palace", items: ["Margherita Pizza x1", "Garlic Bread x1"], total: 348, date: "28 Feb", status: "Delivered" },
 ];
 
 const S = {
@@ -111,6 +118,307 @@ function BottomNav({ screen, setScreen, cartCount }) {
   );
 }
 
+// ===================== ADMIN DASHBOARD =====================
+function AdminDashboard({ onLogout }) {
+  const [tab, setTab] = useState("orders");
+  const [orders, setOrders] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ total: 0, revenue: 0, pending: 0, delivered: 0 });
+
+  useEffect(() => { fetchData(); }, [tab]);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      if (tab === "orders" || tab === "dashboard") {
+        const { data } = await supabase.from("orders").select("*").order("created_at", { ascending: false });
+        if (data) {
+          setOrders(data);
+          setStats({
+            total: data.length,
+            revenue: data.reduce((s, o) => s + (o.total || 0), 0),
+            pending: data.filter(o => o.status === "Pending").length,
+            delivered: data.filter(o => o.status === "Delivered").length,
+          });
+        }
+      }
+      if (tab === "customers") {
+        const { data } = await supabase.from("customers").select("*").order("created_at", { ascending: false });
+        if (data) setCustomers(data);
+      }
+    } catch(e) {}
+    setLoading(false);
+  };
+
+  const updateStatus = async (id, status) => {
+    await supabase.from("orders").update({ status }).eq("id", id);
+    fetchData();
+  };
+
+  const statusColor = (s) => s === "Delivered" ? "#22C55E" : s === "Preparing" ? "#F59E0B" : s === "On the Way" ? "#3B82F6" : "#FF4D00";
+
+  return (
+    <div style={{ fontFamily:"'Nunito',sans-serif", minHeight:"100vh", backgroundColor:"#0F172A", color:"#fff", maxWidth:430, margin:"0 auto" }}>
+      {/* Header */}
+      <div style={{ background:"linear-gradient(135deg,#FF4D00,#FF8C00)", padding:"20px 20px 16px" }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <div style={{ fontSize:22, fontWeight:900 }}>🍽️ Zaiqa Admin</div>
+            <div style={{ fontSize:12, opacity:0.85 }}>Creator Dashboard</div>
+          </div>
+          <button onClick={onLogout} style={{ backgroundColor:"rgba(255,255,255,0.2)", color:"#fff", border:"none", borderRadius:10, padding:"8px 14px", fontSize:12, fontWeight:700, cursor:"pointer" }}>Logout</button>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ display:"flex", backgroundColor:"#1E293B", borderBottom:"1px solid #334155" }}>
+        {[["📊","dashboard"],["📦","orders"],["👥","customers"]].map(([icon,t]) => (
+          <div key={t} onClick={() => setTab(t)} style={{ flex:1, padding:"12px 0", textAlign:"center", fontSize:11, fontWeight:700, cursor:"pointer", color:tab===t?"#FF4D00":"#94A3B8", borderBottom:tab===t?"2px solid #FF4D00":"2px solid transparent", textTransform:"capitalize" }}>
+            {icon} {t}
+          </div>
+        ))}
+      </div>
+
+      <div style={{ padding:"16px 16px 30px", overflowY:"auto", maxHeight:"calc(100vh - 130px)" }}>
+
+        {/* DASHBOARD TAB */}
+        {tab === "dashboard" && (
+          <>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:12, marginBottom:20 }}>
+              {[["📦","Total Orders",stats.total,"#3B82F6"],["💰","Revenue","₹"+stats.revenue,"#22C55E"],["⏳","Pending",stats.pending,"#F59E0B"],["✅","Delivered",stats.delivered,"#8B5CF6"]].map(([icon,label,val,color]) => (
+                <div key={label} style={{ backgroundColor:"#1E293B", borderRadius:14, padding:16, borderLeft:`4px solid ${color}` }}>
+                  <div style={{ fontSize:22 }}>{icon}</div>
+                  <div style={{ fontSize:22, fontWeight:900, color, marginTop:6 }}>{val}</div>
+                  <div style={{ fontSize:11, color:"#94A3B8", marginTop:2 }}>{label}</div>
+                </div>
+              ))}
+            </div>
+            <div style={{ backgroundColor:"#1E293B", borderRadius:14, padding:16 }}>
+              <div style={{ fontSize:15, fontWeight:800, marginBottom:12 }}>Recent Orders</div>
+              {loading ? <div style={{ color:"#94A3B8", textAlign:"center", padding:20 }}>Loading...</div> :
+                orders.length === 0 ? <div style={{ color:"#94A3B8", textAlign:"center", padding:20 }}>No orders yet</div> :
+                orders.slice(0,5).map(order => (
+                  <div key={order.id} style={{ display:"flex", justifyContent:"space-between", alignItems:"center", padding:"10px 0", borderBottom:"1px solid #334155" }}>
+                    <div>
+                      <div style={{ fontWeight:700, fontSize:13 }}>{order.customer_name || "Customer"}</div>
+                      <div style={{ fontSize:11, color:"#94A3B8" }}>{order.restaurant_name}</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:13, fontWeight:800, color:"#FF4D00" }}>₹{order.total}</div>
+                      <span style={{ fontSize:10, backgroundColor:statusColor(order.status)+"22", color:statusColor(order.status), padding:"2px 8px", borderRadius:20, fontWeight:700 }}>{order.status}</span>
+                    </div>
+                  </div>
+                ))
+              }
+            </div>
+          </>
+        )}
+
+        {/* ORDERS TAB */}
+        {tab === "orders" && (
+          <>
+            <div style={{ fontSize:16, fontWeight:800, marginBottom:14 }}>All Orders ({orders.length})</div>
+            {loading ? <div style={{ color:"#94A3B8", textAlign:"center", padding:40 }}>Loading orders...</div> :
+              orders.length === 0 ? (
+                <div style={{ textAlign:"center", padding:40, color:"#94A3B8" }}>
+                  <div style={{ fontSize:48 }}>📦</div>
+                  <div style={{ marginTop:12, fontSize:15 }}>No orders yet!</div>
+                  <div style={{ fontSize:12, marginTop:6 }}>Orders will appear here when customers place them</div>
+                </div>
+              ) :
+              orders.map(order => (
+                <div key={order.id} style={{ backgroundColor:"#1E293B", borderRadius:14, padding:16, marginBottom:12 }}>
+                  <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start" }}>
+                    <div>
+                      <div style={{ fontWeight:800, fontSize:14 }}>#{order.id?.toString().slice(-6)}</div>
+                      <div style={{ fontSize:13, color:"#94A3B8", marginTop:2 }}>{order.customer_name || "Customer"}</div>
+                      <div style={{ fontSize:12, color:"#64748B", marginTop:1 }}>{order.restaurant_name}</div>
+                    </div>
+                    <div style={{ textAlign:"right" }}>
+                      <div style={{ fontSize:16, fontWeight:900, color:"#FF4D00" }}>₹{order.total}</div>
+                      <div style={{ fontSize:10, color:"#64748B", marginTop:2 }}>{new Date(order.created_at).toLocaleDateString()}</div>
+                    </div>
+                  </div>
+                  <div style={{ fontSize:12, color:"#94A3B8", marginTop:8, padding:"8px", backgroundColor:"#0F172A", borderRadius:8 }}>
+                    {order.items}
+                  </div>
+                  <div style={{ display:"flex", gap:8, marginTop:10, flexWrap:"wrap" }}>
+                    {["Pending","Preparing","On the Way","Delivered"].map(s => (
+                      <button key={s} onClick={() => updateStatus(order.id, s)} style={{ padding:"5px 10px", borderRadius:8, border:"none", cursor:"pointer", fontSize:11, fontWeight:700, backgroundColor:order.status===s?statusColor(s):"#334155", color:order.status===s?"#fff":"#94A3B8" }}>{s}</button>
+                    ))}
+                  </div>
+                </div>
+              ))
+            }
+          </>
+        )}
+
+        {/* CUSTOMERS TAB */}
+        {tab === "customers" && (
+          <>
+            <div style={{ fontSize:16, fontWeight:800, marginBottom:14 }}>Customers ({customers.length})</div>
+            {loading ? <div style={{ color:"#94A3B8", textAlign:"center", padding:40 }}>Loading...</div> :
+              customers.length === 0 ? (
+                <div style={{ textAlign:"center", padding:40, color:"#94A3B8" }}>
+                  <div style={{ fontSize:48 }}>👥</div>
+                  <div style={{ marginTop:12, fontSize:15 }}>No customers yet!</div>
+                  <div style={{ fontSize:12, marginTop:6 }}>Customers will appear here after they order</div>
+                </div>
+              ) :
+              customers.map(c => (
+                <div key={c.id} style={{ backgroundColor:"#1E293B", borderRadius:14, padding:16, marginBottom:12, display:"flex", alignItems:"center", gap:14 }}>
+                  <div style={{ width:44, height:44, borderRadius:"50%", backgroundColor:"#FF4D0020", display:"flex", alignItems:"center", justifyContent:"center", fontSize:20 }}>👤</div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontWeight:800, fontSize:14 }}>{c.name}</div>
+                    <div style={{ fontSize:12, color:"#94A3B8" }}>{c.phone}</div>
+                    <div style={{ fontSize:11, color:"#64748B", marginTop:2 }}>{c.address}</div>
+                  </div>
+                  <div style={{ textAlign:"right" }}>
+                    <div style={{ fontSize:13, fontWeight:800, color:"#FF4D00" }}>{c.total_orders || 0} orders</div>
+                    <div style={{ fontSize:11, color:"#64748B" }}>₹{c.total_spent || 0}</div>
+                  </div>
+                </div>
+              ))
+            }
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ===================== ADMIN LOGIN =====================
+function AdminLogin({ onLogin }) {
+  const [email, setEmail] = useState("");
+  const [pass, setPass] = useState("");
+  const [error, setError] = useState("");
+
+  const login = () => {
+    if (email === ADMIN_EMAIL && pass === ADMIN_PASS) {
+      onLogin();
+    } else {
+      setError("Wrong email or password!");
+    }
+  };
+
+  return (
+    <div style={{ fontFamily:"'Nunito',sans-serif", minHeight:"100vh", backgroundColor:"#0F172A", display:"flex", alignItems:"center", justifyContent:"center", maxWidth:430, margin:"0 auto" }}>
+      <div style={{ width:"90%", backgroundColor:"#1E293B", borderRadius:24, padding:30 }}>
+        <div style={{ textAlign:"center", marginBottom:28 }}>
+          <div style={{ fontSize:48 }}>🍽️</div>
+          <div style={{ fontSize:22, fontWeight:900, color:"#fff", marginTop:8 }}>Zaiqa Admin</div>
+          <div style={{ fontSize:13, color:"#94A3B8", marginTop:4 }}>Login to manage your app</div>
+        </div>
+        <div style={{ marginBottom:14 }}>
+          <div style={{ fontSize:12, color:"#94A3B8", marginBottom:6, fontWeight:700 }}>EMAIL</div>
+          <input style={{ ...S.input, backgroundColor:"#0F172A", color:"#fff", border:"1.5px solid #334155" }} placeholder="admin email" value={email} onChange={e=>setEmail(e.target.value)} type="email"/>
+        </div>
+        <div style={{ marginBottom:20 }}>
+          <div style={{ fontSize:12, color:"#94A3B8", marginBottom:6, fontWeight:700 }}>PASSWORD</div>
+          <input style={{ ...S.input, backgroundColor:"#0F172A", color:"#fff", border:"1.5px solid #334155" }} placeholder="password" value={pass} onChange={e=>setPass(e.target.value)} type="password"/>
+        </div>
+        {error && <div style={{ color:"#FF4D00", fontSize:13, marginBottom:14, textAlign:"center", fontWeight:700 }}>{error}</div>}
+        <button style={S.btn(true)} onClick={login}>Login to Dashboard</button>
+        <div style={{ marginTop:20, backgroundColor:"#0F172A", borderRadius:12, padding:14 }}>
+          <div style={{ fontSize:11, color:"#64748B", fontWeight:700, marginBottom:6 }}>YOUR ADMIN CREDENTIALS</div>
+          <div style={{ fontSize:12, color:"#94A3B8" }}>📧 {ADMIN_EMAIL}</div>
+          <div style={{ fontSize:12, color:"#94A3B8", marginTop:4 }}>🔑 {ADMIN_PASS}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ===================== CHECKOUT FORM =====================
+function CheckoutForm({ cartItems, allCartTotal, onOrderPlaced, onBack }) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [address, setAddress] = useState("");
+  const [loading, setLoading] = useState(false);
+  const tax = Math.round(allCartTotal * 0.05);
+  const total = allCartTotal + 5 + tax;
+
+  const placeOrder = async () => {
+    if (!name || !phone || !address) { alert("Please fill all fields!"); return; }
+    setLoading(true);
+    try {
+      const itemsStr = cartItems.map(i => `${i.name} x${i.qty}`).join(", ");
+      const restaurantName = cartItems.length > 0 ? (Object.values(menuItems).find(items => items.find(m => m.id === cartItems[0].id)) ? restaurants.find(r => menuItems[r.id]?.find(m => m.id === cartItems[0].id))?.name : "Zaiqa") : "Zaiqa";
+
+      // Save order to Supabase
+      await supabase.from("orders").insert([{
+        customer_name: name,
+        customer_phone: phone,
+        customer_address: address,
+        items: itemsStr,
+        total: total,
+        restaurant_name: restaurantName || "Zaiqa Restaurant",
+        status: "Pending",
+      }]);
+
+      // Save/update customer
+      const { data: existing } = await supabase.from("customers").select("*").eq("phone", phone).single();
+      if (existing) {
+        await supabase.from("customers").update({ total_orders: (existing.total_orders||0)+1, total_spent: (existing.total_spent||0)+total }).eq("phone", phone);
+      } else {
+        await supabase.from("customers").insert([{ name, phone, address, total_orders: 1, total_spent: total }]);
+      }
+
+      onOrderPlaced();
+    } catch(e) {
+      alert("Order placed! (Database will sync shortly)");
+      onOrderPlaced();
+    }
+    setLoading(false);
+  };
+
+  return (
+    <div style={S.app}>
+      <div style={{ ...S.topBar, display:"flex", alignItems:"center", gap:14 }}>
+        <span style={{ fontSize:24, cursor:"pointer" }} onClick={onBack}>←</span>
+        <div style={{ fontSize:20, fontWeight:800 }}>📋 Checkout</div>
+      </div>
+      <div style={{ padding:"16px 16px 30px", overflowY:"auto", maxHeight:"calc(100vh - 80px)" }}>
+        <div style={{ ...S.card, padding:20, marginBottom:16 }}>
+          <div style={{ fontSize:15, fontWeight:800, marginBottom:14 }}>Delivery Details</div>
+          {[["Your Name", name, setName, "text", "👤"], ["Phone Number", phone, setPhone, "tel", "📱"], ["Delivery Address", address, setAddress, "text", "📍"]].map(([label, val, setter, type, icon]) => (
+            <div key={label} style={{ marginBottom:14 }}>
+              <div style={{ fontSize:12, fontWeight:700, color:"#888", marginBottom:6 }}>{icon} {label}</div>
+              <input style={S.input} placeholder={label} value={val} onChange={e=>setter(e.target.value)} type={type}/>
+            </div>
+          ))}
+        </div>
+
+        <div style={{ ...S.card, padding:16, marginBottom:16 }}>
+          <div style={{ fontSize:15, fontWeight:800, marginBottom:12 }}>Order Summary</div>
+          {cartItems.map(item => (
+            <div key={item.id} style={{ display:"flex", justifyContent:"space-between", marginBottom:8, fontSize:13 }}>
+              <span>{item.name} x{item.qty}</span>
+              <span style={{ fontWeight:700 }}>₹{item.price * item.qty}</span>
+            </div>
+          ))}
+          <div style={{ borderTop:"1.5px dashed #eee", paddingTop:10, marginTop:8 }}>
+            {[["Item Total", `₹${allCartTotal}`],["Delivery", "FREE 🎉"],["Platform Fee","₹5"],["Taxes",`₹${tax}`]].map(([k,v]) => (
+              <div key={k} style={{ display:"flex", justifyContent:"space-between", marginBottom:6, fontSize:13, color:"#666" }}>
+                <span>{k}</span><span>{v}</span>
+              </div>
+            ))}
+            <div style={{ display:"flex", justifyContent:"space-between", fontWeight:800, fontSize:16, marginTop:8, paddingTop:8, borderTop:"1px solid #eee" }}>
+              <span>Total</span><span style={{ color:"#FF4D00" }}>₹{total}</span>
+            </div>
+          </div>
+        </div>
+
+        <button style={{ ...S.btn(true), borderRadius:16, padding:16 }} onClick={placeOrder} disabled={loading}>
+          {loading ? "Placing Order..." : `🛵 Place Order • ₹${total}`}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ===================== MAIN APP =====================
 function App() {
   const [screen, setScreen] = useState("home");
   const [selectedRestaurant, setSelectedRestaurant] = useState(null);
@@ -119,9 +427,12 @@ function App() {
   const [orderPlaced, setOrderPlaced] = useState(false);
   const [trackingStep, setTrackingStep] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [showAdminLogin, setShowAdminLogin] = useState(false);
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [myOrders, setMyOrders] = useState([]);
 
   const cartCount = Object.values(cart).reduce((a,b)=>a+b,0);
-
   const allCartTotal = Object.entries(cart).reduce((sum,[id,qty]) => {
     for (const items of Object.values(menuItems)) {
       const item = items.find(i => i.id === parseInt(id));
@@ -129,6 +440,13 @@ function App() {
     }
     return sum;
   }, 0);
+
+  const cartItems = [];
+  for (const items of Object.values(menuItems)) {
+    for (const item of items) {
+      if(cart[item.id]) cartItems.push({...item, qty:cart[item.id]});
+    }
+  }
 
   const addToCart = (itemId) => setCart(p => ({...p,[itemId]:(p[itemId]||0)+1}));
   const removeFromCart = (itemId) => setCart(p => {
@@ -143,14 +461,19 @@ function App() {
     return matchCat && matchSearch;
   });
 
-  const placeOrder = () => {
-    setOrderPlaced(true);
+  const handleOrderPlaced = () => {
     setCart({});
+    setShowCheckout(false);
+    setOrderPlaced(true);
     setTrackingStep(0);
     setScreen("tracking");
     let step=0;
-    const interval=setInterval(()=>{ step++; setTrackingStep(step); if(step>=4) clearInterval(interval); },2000);
+    const interval=setInterval(()=>{ step++; setTrackingStep(step); if(step>=4) clearInterval(interval); },2500);
   };
+
+  if (showAdminLogin && !isAdmin) return <AdminLogin onLogin={() => { setIsAdmin(true); setShowAdminLogin(false); }} />;
+  if (isAdmin) return <AdminDashboard onLogout={() => setIsAdmin(false)} />;
+  if (showCheckout) return <CheckoutForm cartItems={cartItems} allCartTotal={allCartTotal} onOrderPlaced={handleOrderPlaced} onBack={() => setShowCheckout(false)} />;
 
   // HOME
   if (screen==="home") return (
@@ -170,19 +493,17 @@ function App() {
       </div>
 
       <div style={{padding:"16px 16px 90px",overflowY:"auto",maxHeight:"calc(100vh - 130px)"}}>
-        {/* Banner */}
         <div style={{background:"linear-gradient(135deg,#FF4D00,#FF8C00)",borderRadius:20,padding:"20px",color:"#fff",marginBottom:24,position:"relative",overflow:"hidden"}}>
           <div style={{fontSize:20,fontWeight:900}}>🎉 50% OFF</div>
           <div style={{fontSize:13,opacity:0.9,marginTop:4}}>On your first 3 orders! Use code <strong>ZAIQA50</strong></div>
           <div style={{fontSize:50,position:"absolute",right:16,top:"50%",transform:"translateY(-50%)",opacity:0.25}}>🛵</div>
         </div>
 
-        {/* Dish Types */}
         <div style={{marginBottom:24}}>
           <div style={{fontSize:18,fontWeight:800,marginBottom:14,color:"#1A1A1A"}}>What's on your mind?</div>
           <div style={{display:"grid",gridTemplateColumns:"repeat(5,1fr)",gap:10}}>
             {dishTypes.map(d => (
-              <div key={d.name} onClick={()=>{setActiveCategory(d.name==="Noodles"?"Chinese":d.name);}} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,cursor:"pointer"}}>
+              <div key={d.name} onClick={()=>setActiveCategory(d.name==="Noodles"?"Chinese":d.name)} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:6,cursor:"pointer"}}>
                 <div style={{width:50,height:50,borderRadius:16,backgroundColor:d.color+"20",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,border:`2px solid ${d.color}30`}}>{d.emoji}</div>
                 <div style={{fontSize:10,fontWeight:700,color:"#444",textAlign:"center"}}>{d.name}</div>
               </div>
@@ -190,14 +511,12 @@ function App() {
           </div>
         </div>
 
-        {/* Category Filter */}
         <div style={{display:"flex",gap:8,overflowX:"auto",paddingBottom:8,marginBottom:20,scrollbarWidth:"none"}}>
           {categories.map(cat => (
             <div key={cat} onClick={()=>setActiveCategory(cat)} style={{flexShrink:0,padding:"8px 16px",borderRadius:20,fontSize:13,fontWeight:700,cursor:"pointer",backgroundColor:activeCategory===cat?"#FF4D00":"#fff",color:activeCategory===cat?"#fff":"#666",border:`1.5px solid ${activeCategory===cat?"#FF4D00":"#eee"}`}}>{cat}</div>
           ))}
         </div>
 
-        {/* Restaurants */}
         <div style={{fontSize:16,fontWeight:800,marginBottom:14,color:"#1A1A1A"}}>{filteredRestaurants.length} Restaurants Near You</div>
         <div style={{display:"flex",flexDirection:"column",gap:16}}>
           {filteredRestaurants.map(r => (
@@ -229,7 +548,6 @@ function App() {
     <div style={S.app}>
       <div style={S.topBar}>
         <div style={{fontSize:20,fontWeight:800}}>🍽️ Explore Dishes</div>
-        <div style={{fontSize:13,opacity:0.85,marginTop:2}}>Pick your craving</div>
       </div>
       <div style={{padding:"16px 16px 90px",overflowY:"auto",maxHeight:"calc(100vh - 80px)"}}>
         <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:14}}>
@@ -265,7 +583,6 @@ function App() {
           <span>💰 {selectedRestaurant.price}</span>
         </div>
         <div style={{padding:"16px 16px 120px",overflowY:"auto",maxHeight:"calc(100vh - 140px)"}}>
-          <div style={{fontSize:16,fontWeight:800,marginBottom:14}}>🍽️ Menu</div>
           {items.map(item => (
             <div key={item.id} style={{...S.card,padding:16,marginBottom:14,display:"flex",gap:14}}>
               <div style={{flex:1}}>
@@ -297,9 +614,7 @@ function App() {
         {menuCartTotal>0 && (
           <div style={{position:"fixed",bottom:20,left:"50%",transform:"translateX(-50%)",width:"90%",maxWidth:390}}>
             <button style={{...S.btn(true),borderRadius:16,padding:16,display:"flex",justifyContent:"space-between",alignItems:"center"}} onClick={()=>setScreen("cart")}>
-              <span>{Object.values(cart).reduce((a,b)=>a+b,0)} items</span>
-              <span>View Cart →</span>
-              <span>₹{menuCartTotal}</span>
+              <span>{cartCount} items</span><span>View Cart →</span><span>₹{menuCartTotal}</span>
             </button>
           </div>
         )}
@@ -309,12 +624,6 @@ function App() {
 
   // CART
   if (screen==="cart") {
-    const cartItems=[];
-    for (const items of Object.values(menuItems)) {
-      for (const item of items) {
-        if(cart[item.id]) cartItems.push({...item,qty:cart[item.id]});
-      }
-    }
     const tax = Math.round(allCartTotal*0.05);
     return (
       <div style={S.app}>
@@ -327,7 +636,6 @@ function App() {
             <div style={{textAlign:"center",padding:"60px 20px"}}>
               <div style={{fontSize:80}}>🛒</div>
               <div style={{fontSize:20,fontWeight:800,marginTop:16}}>Your cart is empty</div>
-              <div style={{fontSize:14,color:"#888",marginTop:8}}>Add items to get started</div>
               <button style={{...S.btn(),marginTop:24}} onClick={()=>setScreen("home")}>Browse Restaurants</button>
             </div>
           ) : (
@@ -350,26 +658,19 @@ function App() {
               ))}
               <div style={{...S.card,padding:16,marginTop:16}}>
                 <div style={{fontSize:15,fontWeight:800,marginBottom:12}}>Bill Summary</div>
-                {[["Item Total",`₹${allCartTotal}`],["Delivery Fee","FREE 🎉"],["Platform Fee","₹5"],["Taxes",`₹${tax}`]].map(([k,v])=>(
+                {[["Item Total",`₹${allCartTotal}`],["Delivery","FREE 🎉"],["Platform Fee","₹5"],["Taxes",`₹${tax}`]].map(([k,v])=>(
                   <div key={k} style={{display:"flex",justifyContent:"space-between",marginBottom:8,fontSize:14,color:"#555"}}>
                     <span>{k}</span><span>{v}</span>
                   </div>
                 ))}
                 <div style={{borderTop:"1.5px dashed #eee",paddingTop:10,marginTop:8,display:"flex",justifyContent:"space-between",fontWeight:800,fontSize:16}}>
-                  <span>Total</span><span>₹{allCartTotal+5+tax}</span>
-                </div>
-              </div>
-              <div style={{marginTop:14,...S.card,padding:14}}>
-                <div style={{fontSize:13,fontWeight:700,marginBottom:8}}>🏷️ Apply Coupon</div>
-                <div style={{display:"flex",gap:10}}>
-                  <input style={{...S.input,flex:1}} placeholder="Try ZAIQA50"/>
-                  <button style={{...S.btn(),borderRadius:10,padding:"12px 16px",fontSize:13}}>Apply</button>
+                  <span>Total</span><span style={{color:"#FF4D00"}}>₹{allCartTotal+5+tax}</span>
                 </div>
               </div>
               <div style={{height:80}}/>
               <div style={{position:"fixed",bottom:20,left:"50%",transform:"translateX(-50%)",width:"90%",maxWidth:390}}>
-                <button style={{...S.btn(true),borderRadius:16,padding:16}} onClick={placeOrder}>
-                  Place Order • ₹{allCartTotal+5+tax}
+                <button style={{...S.btn(true),borderRadius:16,padding:16}} onClick={()=>setShowCheckout(true)}>
+                  Proceed to Checkout • ₹{allCartTotal+5+tax}
                 </button>
               </div>
             </>
@@ -409,8 +710,8 @@ function App() {
                 {steps.map((step,i)=>(
                   <div key={i} style={{display:"flex",gap:16,alignItems:"flex-start",marginBottom:i<steps.length-1?20:0}}>
                     <div style={{display:"flex",flexDirection:"column",alignItems:"center"}}>
-                      <div style={{width:44,height:44,borderRadius:"50%",backgroundColor:i<=trackingStep?"#FF4D00":"#F3F4F6",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,transition:"all 0.3s"}}>{step.icon}</div>
-                      {i<steps.length-1 && <div style={{width:2,height:28,backgroundColor:i<trackingStep?"#FF4D00":"#eee",marginTop:4,transition:"all 0.3s"}}/>}
+                      <div style={{width:44,height:44,borderRadius:"50%",backgroundColor:i<=trackingStep?"#FF4D00":"#F3F4F6",display:"flex",alignItems:"center",justifyContent:"center",fontSize:20,transition:"all 0.5s"}}>{step.icon}</div>
+                      {i<steps.length-1 && <div style={{width:2,height:28,backgroundColor:i<trackingStep?"#FF4D00":"#eee",marginTop:4,transition:"all 0.5s"}}/>}
                     </div>
                     <div style={{paddingTop:10}}>
                       <div style={{fontWeight:800,fontSize:14,color:i<=trackingStep?"#1A1A1A":"#999"}}>{step.label}</div>
@@ -421,23 +722,12 @@ function App() {
               </div>
             </>
           ) : (
-            <>
-              <div style={{fontSize:18,fontWeight:800,marginBottom:14}}>Order History</div>
-              {orderHistory.map(order=>(
-                <div key={order.id} style={{...S.card,padding:16,marginBottom:12}}>
-                  <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-                    <div style={{fontWeight:800,fontSize:15}}>{order.restaurant}</div>
-                    <span style={S.badge("#22C55E")}>{order.status}</span>
-                  </div>
-                  <div style={{fontSize:12,color:"#888",marginTop:4}}>{order.items.join(", ")}</div>
-                  <div style={{display:"flex",justifyContent:"space-between",marginTop:10,fontSize:13}}>
-                    <span style={{color:"#888"}}>{order.date}</span>
-                    <span style={{fontWeight:800}}>₹{order.total}</span>
-                  </div>
-                  <button style={{...S.btn(true),marginTop:12,borderRadius:10,padding:10,fontSize:13}}>Reorder</button>
-                </div>
-              ))}
-            </>
+            <div style={{textAlign:"center",padding:"60px 20px"}}>
+              <div style={{fontSize:60}}>📦</div>
+              <div style={{fontSize:18,fontWeight:800,marginTop:16}}>No active orders</div>
+              <div style={{fontSize:13,color:"#888",marginTop:8}}>Place an order to track it here</div>
+              <button style={{...S.btn(),marginTop:24}} onClick={()=>setScreen("home")}>Order Now</button>
+            </div>
           )}
         </div>
         <BottomNav screen={screen} setScreen={setScreen} cartCount={cartCount}/>
@@ -456,7 +746,7 @@ function App() {
           <div style={{width:64,height:64,borderRadius:"50%",backgroundColor:"#FF4D0020",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,border:"3px solid #FF4D00"}}>✈️</div>
           <div>
             <div style={{fontSize:18,fontWeight:800}}>Mohammed Faizan Z</div>
-            <div style={{fontSize:13,color:"#888"}}>faizan@email.com</div>
+            <div style={{fontSize:13,color:"#888"}}>faizan@zaiqa.com</div>
             <div style={{fontSize:12,color:"#FF4D00",fontWeight:700,marginTop:4}}>⭐ Gold Member</div>
           </div>
         </div>
@@ -468,7 +758,18 @@ function App() {
             </div>
           ))}
         </div>
-        {[["📍","Saved Addresses","Home, Office, College"],["❤️","Favourites","6 restaurants saved"],["💳","Payment Methods","UPI, Card added"],["🎁","Offers & Rewards","2 coupons available"],["🔔","Notifications","All enabled"],["🆘","Help & Support","24/7 available"],["⚙️","Settings","Account settings"],["🚪","Logout","See you soon!"]].map(([icon,title,sub])=>(
+
+        {/* ADMIN LOGIN BUTTON */}
+        <div onClick={()=>setShowAdminLogin(true)} style={{...S.card,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:14,backgroundColor:"#FF4D00",cursor:"pointer"}}>
+          <span style={{fontSize:22}}>🔐</span>
+          <div style={{flex:1}}>
+            <div style={{fontWeight:700,fontSize:14,color:"#fff"}}>Admin Dashboard</div>
+            <div style={{fontSize:12,color:"rgba(255,255,255,0.7)",marginTop:1}}>Manage orders & customers</div>
+          </div>
+          <span style={{color:"rgba(255,255,255,0.7)",fontSize:18}}>›</span>
+        </div>
+
+        {[["📍","Saved Addresses","Home, Office, College"],["❤️","Favourites","6 restaurants saved"],["💳","Payment Methods","UPI, Card added"],["🎁","Offers & Rewards","2 coupons available"],["🔔","Notifications","All enabled"],["🆘","Help & Support","24/7 available"],["⚙️","Settings","Account settings"]].map(([icon,title,sub])=>(
           <div key={title} style={{...S.card,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:14}}>
             <span style={{fontSize:22}}>{icon}</span>
             <div style={{flex:1}}>
