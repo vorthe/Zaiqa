@@ -150,10 +150,13 @@ function AuthScreen({onAuth}){
         onAuth(ex);
       }
     }catch(e){
-      if(e.code==="auth/email-already-in-use")setErr("Account already exists! Please login.");
-      else if(e.code==="auth/wrong-password"||e.code==="auth/invalid-credential")setErr("Wrong password. Try again!");
-      else if(e.code==="auth/user-not-found")setErr("No account found. Please sign up!");
-      else setErr("Something went wrong. Try again!");
+      const code=e.code||"";
+      if(code==="auth/email-already-in-use")setErr("Account already exists! Please login.");
+      else if(code==="auth/wrong-password"||code==="auth/invalid-credential"||code==="auth/invalid-login-credentials")setErr("Wrong email or password. Try again!");
+      else if(code==="auth/user-not-found")setErr("No account found. Please sign up!");
+      else if(code==="auth/too-many-requests")setErr("Too many attempts. Wait a few minutes and try again!");
+      else if(code==="auth/network-request-failed")setErr("No internet connection. Check your network!");
+      else setErr("Error: "+(e.message||"Something went wrong. Try again!"));
     }
     setLoading(false);
   };
@@ -820,133 +823,140 @@ function App(){
 
   // PROFILE
   if(screen==="profile"){
-    const [editMode,setEditMode]=useState(false);
-    const [editForm,setEditForm]=useState({name:user.name||"",phone:user.phone||""});
-    const [newAddress,setNewAddress]=useState("");
-    const [showEmoji,setShowEmoji]=useState(false);
-    const saved=user?.saved_addresses||[];
-
-    const saveProfile=async()=>{
-      await db.from("customers").update({name:editForm.name,phone:editForm.phone}).eq("id",user.id);
-      handleAuth({...user,...editForm});setEditMode(false);
-    };
-    const pickEmoji=async(e)=>{
-      await db.from("customers").update({profile_emoji:e}).eq("id",user.id);
-      handleAuth({...user,profile_emoji:e});setShowEmoji(false);
-    };
-    const addAddress=async()=>{
-      if(!newAddress.trim())return;
-      const updated=[...saved,newAddress.trim()].slice(-5);
-      await db.from("customers").update({saved_addresses:updated}).eq("id",user.id);
-      handleAuth({...user,saved_addresses:updated});setNewAddress("");
-    };
-    const removeAddress=async(idx)=>{
-      const updated=saved.filter((_,i)=>i!==idx);
-      await db.from("customers").update({saved_addresses:updated}).eq("id",user.id);
-      handleAuth({...user,saved_addresses:updated});
-    };
-
-    return(
-      <div style={S.app}>
-        <div style={S.topBar}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-            <div style={{fontSize:20,fontWeight:800}}>👤 My Profile</div>
-            <button onClick={()=>setEditMode(!editMode)} style={{backgroundColor:"rgba(255,255,255,0.25)",color:"#fff",border:"none",borderRadius:10,padding:"8px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
-              {editMode?"Cancel":"✏️ Edit"}
-            </button>
-          </div>
-        </div>
-        <div style={{padding:"20px 16px 90px",overflowY:"auto",maxHeight:"calc(100vh - 70px)"}}>
-
-          {/* Profile Card */}
-          <div style={{...S.card,padding:20,marginBottom:16,position:"relative"}}>
-            <div style={{display:"flex",alignItems:"center",gap:16}}>
-              <div style={{position:"relative",flexShrink:0}}>
-                <div onClick={()=>setShowEmoji(!showEmoji)} style={{width:66,height:66,borderRadius:"50%",backgroundColor:"#FF4D0015",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,border:"3px solid #FF4D00",cursor:"pointer"}}>
-                  {user.profile_emoji||"😊"}
-                </div>
-                <div style={{position:"absolute",bottom:0,right:0,backgroundColor:"#FF4D00",borderRadius:"50%",width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#fff",cursor:"pointer"}} onClick={()=>setShowEmoji(!showEmoji)}>✏️</div>
-              </div>
-              <div style={{flex:1}}>
-                {editMode?(
-                  <>
-                    <input style={{...S.inp,marginBottom:8,fontSize:13}} placeholder="Full name" value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})}/>
-                    <input style={{...S.inp,marginBottom:8,fontSize:13}} placeholder="Phone number" value={editForm.phone} onChange={e=>setEditForm({...editForm,phone:e.target.value})} type="tel"/>
-                    <button style={{...S.btn(true),borderRadius:10,padding:"10px",fontSize:14}} onClick={saveProfile}>Save Changes</button>
-                  </>
-                ):(
-                  <>
-                    <div style={{fontSize:18,fontWeight:800}}>{user.name}</div>
-                    <div style={{fontSize:13,color:"#888",marginTop:3}}>📧 {user.email||"—"}</div>
-                    <div style={{fontSize:13,color:"#888",marginTop:2}}>📱 {user.phone||"Add phone number"}</div>
-                    <div style={{fontSize:12,color:"#FF4D00",fontWeight:700,marginTop:5}}>⭐ Zaiqa Member</div>
-                  </>
-                )}
-              </div>
-            </div>
-            {showEmoji&&(
-              <div style={{marginTop:14,borderTop:"1px solid #f3f3f3",paddingTop:14}}>
-                <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:10}}>CHOOSE AVATAR</div>
-                <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
-                  {PROFILE_EMOJIS.map(e=>(
-                    <div key={e} onClick={()=>pickEmoji(e)} style={{fontSize:32,cursor:"pointer",padding:4,borderRadius:10,backgroundColor:user.profile_emoji===e?"#FF4D0015":"transparent"}}>{e}</div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Stats */}
-          <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
-            {[[user.total_orders||0,"📦 Total Orders"],[`₹${user.total_spent||0}`,"💰 Total Spent"]].map(([val,label])=>(
-              <div key={label} style={{...S.card,padding:14,textAlign:"center"}}>
-                <div style={{fontSize:22,fontWeight:900,color:"#FF4D00"}}>{val}</div>
-                <div style={{fontSize:12,color:"#888",marginTop:2}}>{label}</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Saved Addresses */}
-          <div style={{...S.card,padding:16,marginBottom:14}}>
-            <div style={{fontSize:15,fontWeight:800,marginBottom:12}}>📍 Saved Addresses</div>
-            {saved.length===0&&<div style={{fontSize:13,color:"#bbb",marginBottom:12,textAlign:"center",padding:"10px 0"}}>No saved addresses yet</div>}
-            {saved.map((a,i)=>(
-              <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",borderRadius:10,backgroundColor:"#F9F9F9",marginBottom:8,gap:10}}>
-                <span style={{fontSize:13,flex:1}}>📍 {a}</span>
-                <span onClick={()=>removeAddress(i)} style={{cursor:"pointer",color:"#FF4D00",fontWeight:700,fontSize:18,lineHeight:1}}>×</span>
-              </div>
-            ))}
-            {saved.length<5&&(
-              <div style={{display:"flex",gap:8,marginTop:8}}>
-                <input style={{...S.inp,flex:1,fontSize:13}} placeholder="Add new address" value={newAddress} onChange={e=>setNewAddress(e.target.value)}/>
-                <button style={{...S.btn(false),borderRadius:10,padding:"0 16px",fontSize:18}} onClick={addAddress}>+</button>
-              </div>
-            )}
-          </div>
-
-          {/* Menu */}
-          {[["📦","My Orders","Full order history","myorders"],["🎁","Offers & Coupons","ZAIQA50 • WELCOME20 • FLAT30",null],["💳","Payment Methods","COD • UPI • Card",null],["🆘","Help & Support","24/7 customer service",null]].map(([icon,title,sub,nav])=>(
-            <div key={title} onClick={()=>nav&&setScreen(nav)} style={{...S.card,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:14,cursor:nav?"pointer":"default"}}>
-              <span style={{fontSize:22}}>{icon}</span>
-              <div style={{flex:1}}>
-                <div style={{fontWeight:700,fontSize:14}}>{title}</div>
-                <div style={{fontSize:12,color:"#aaa",marginTop:1}}>{sub}</div>
-              </div>
-              {nav&&<span style={{color:"#ddd",fontSize:18}}>›</span>}
-            </div>
-          ))}
-
-          <div onClick={handleLogout} style={{...S.card,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:14,cursor:"pointer",backgroundColor:"#FFF0F0"}}>
-            <span style={{fontSize:22}}>🚪</span>
-            <div style={{flex:1}}><div style={{fontWeight:700,fontSize:14,color:"#FF4D00"}}>Logout</div><div style={{fontSize:12,color:"#bbb"}}>See you soon!</div></div>
-          </div>
-        </div>
-        <BottomNav screen={screen} setScreen={setScreen} cartCount={cartCount}/>
-      </div>
-    );
+    return <ProfileScreen user={user} handleAuth={handleAuth} handleLogout={handleLogout} setScreen={setScreen} cartCount={cartCount} screen={screen}/>;
   }
 
   return null;
+}
+
+// ── PROFILE COMPONENT (separate to fix hooks-in-conditional bug) ──
+function ProfileScreen({user,handleAuth,handleLogout,setScreen,cartCount,screen}){
+  const [editMode,setEditMode]=useState(false);
+  const [editForm,setEditForm]=useState({name:user?.name||"",phone:user?.phone||""});
+  const [newAddress,setNewAddress]=useState("");
+  const [showEmoji,setShowEmoji]=useState(false);
+  const saved=user?.saved_addresses||[];
+
+  if(!user) return null;
+
+  const saveProfile=async()=>{
+    await db.from("customers").update({name:editForm.name,phone:editForm.phone}).eq("id",user.id);
+    handleAuth({...user,...editForm});setEditMode(false);
+  };
+  const pickEmoji=async(e)=>{
+    await db.from("customers").update({profile_emoji:e}).eq("id",user.id);
+    handleAuth({...user,profile_emoji:e});setShowEmoji(false);
+  };
+  const addAddress=async()=>{
+    if(!newAddress.trim())return;
+    const updated=[...saved,newAddress.trim()].slice(-5);
+    await db.from("customers").update({saved_addresses:updated}).eq("id",user.id);
+    handleAuth({...user,saved_addresses:updated});setNewAddress("");
+  };
+  const removeAddress=async(idx)=>{
+    const updated=saved.filter((_,i)=>i!==idx);
+    await db.from("customers").update({saved_addresses:updated}).eq("id",user.id);
+    handleAuth({...user,saved_addresses:updated});
+  };
+
+  return(
+    <div style={S.app}>
+      <div style={S.topBar}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+          <div style={{fontSize:20,fontWeight:800}}>👤 My Profile</div>
+          <button onClick={()=>setEditMode(!editMode)} style={{backgroundColor:"rgba(255,255,255,0.25)",color:"#fff",border:"none",borderRadius:10,padding:"8px 16px",fontSize:13,fontWeight:700,cursor:"pointer"}}>
+            {editMode?"Cancel":"✏️ Edit"}
+          </button>
+        </div>
+      </div>
+      <div style={{padding:"20px 16px 90px",overflowY:"auto",maxHeight:"calc(100vh - 70px)"}}>
+
+        {/* Profile Card */}
+        <div style={{...S.card,padding:20,marginBottom:16}}>
+          <div style={{display:"flex",alignItems:"center",gap:16}}>
+            <div style={{position:"relative",flexShrink:0}}>
+              <div onClick={()=>setShowEmoji(!showEmoji)} style={{width:66,height:66,borderRadius:"50%",backgroundColor:"#FF4D0015",display:"flex",alignItems:"center",justifyContent:"center",fontSize:36,border:"3px solid #FF4D00",cursor:"pointer"}}>
+                {user.profile_emoji||"😊"}
+              </div>
+              <div style={{position:"absolute",bottom:0,right:0,backgroundColor:"#FF4D00",borderRadius:"50%",width:22,height:22,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,color:"#fff",cursor:"pointer"}} onClick={()=>setShowEmoji(!showEmoji)}>✏️</div>
+            </div>
+            <div style={{flex:1}}>
+              {editMode?(
+                <>
+                  <input style={{...S.inp,marginBottom:8,fontSize:13}} placeholder="Full name" value={editForm.name} onChange={e=>setEditForm({...editForm,name:e.target.value})}/>
+                  <input style={{...S.inp,marginBottom:8,fontSize:13}} placeholder="Phone number" value={editForm.phone} onChange={e=>setEditForm({...editForm,phone:e.target.value})} type="tel"/>
+                  <button style={{...S.btn(true),borderRadius:10,padding:"10px",fontSize:14,width:"100%"}} onClick={saveProfile}>Save Changes</button>
+                </>
+              ):(
+                <>
+                  <div style={{fontSize:18,fontWeight:800}}>{user.name||"Zaiqa User"}</div>
+                  <div style={{fontSize:13,color:"#888",marginTop:3}}>📧 {user.email||"—"}</div>
+                  <div style={{fontSize:13,color:"#888",marginTop:2}}>📱 {user.phone||"Add phone number"}</div>
+                  <div style={{fontSize:12,color:"#FF4D00",fontWeight:700,marginTop:5}}>⭐ Zaiqa Member</div>
+                </>
+              )}
+            </div>
+          </div>
+          {showEmoji&&(
+            <div style={{marginTop:14,borderTop:"1px solid #f3f3f3",paddingTop:14}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#888",marginBottom:10}}>CHOOSE AVATAR</div>
+              <div style={{display:"flex",flexWrap:"wrap",gap:10}}>
+                {PROFILE_EMOJIS.map(e=>(
+                  <div key={e} onClick={()=>pickEmoji(e)} style={{fontSize:32,cursor:"pointer",padding:4,borderRadius:10,backgroundColor:user.profile_emoji===e?"#FF4D0015":"transparent"}}>{e}</div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Stats */}
+        <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:16}}>
+          {[[user.total_orders||0,"📦 Total Orders"],[`₹${user.total_spent||0}`,"💰 Total Spent"]].map(([val,label])=>(
+            <div key={label} style={{...S.card,padding:14,textAlign:"center"}}>
+              <div style={{fontSize:22,fontWeight:900,color:"#FF4D00"}}>{val}</div>
+              <div style={{fontSize:12,color:"#888",marginTop:2}}>{label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Saved Addresses */}
+        <div style={{...S.card,padding:16,marginBottom:14}}>
+          <div style={{fontSize:15,fontWeight:800,marginBottom:12}}>📍 Saved Addresses</div>
+          {saved.length===0&&<div style={{fontSize:13,color:"#bbb",marginBottom:12,textAlign:"center",padding:"10px 0"}}>No saved addresses yet</div>}
+          {saved.map((a,i)=>(
+            <div key={i} style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 12px",borderRadius:10,backgroundColor:"#F9F9F9",marginBottom:8,gap:10}}>
+              <span style={{fontSize:13,flex:1}}>📍 {a}</span>
+              <span onClick={()=>removeAddress(i)} style={{cursor:"pointer",color:"#FF4D00",fontWeight:700,fontSize:18,lineHeight:1}}>×</span>
+            </div>
+          ))}
+          {saved.length<5&&(
+            <div style={{display:"flex",gap:8,marginTop:8}}>
+              <input style={{...S.inp,flex:1,fontSize:13}} placeholder="Add new address" value={newAddress} onChange={e=>setNewAddress(e.target.value)}/>
+              <button style={{...S.btn(false),borderRadius:10,padding:"0 16px",fontSize:18}} onClick={addAddress}>+</button>
+            </div>
+          )}
+        </div>
+
+        {/* Menu Items */}
+        {[["📦","My Orders","Full order history","myorders"],["🎁","Offers & Coupons","ZAIQA50 • WELCOME20 • FLAT30",null],["💳","Payment Methods","COD • UPI • Card",null],["🆘","Help & Support","24/7 customer service",null]].map(([icon,title,sub,nav])=>(
+          <div key={title} onClick={()=>nav&&setScreen(nav)} style={{...S.card,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:14,cursor:nav?"pointer":"default"}}>
+            <span style={{fontSize:22}}>{icon}</span>
+            <div style={{flex:1}}>
+              <div style={{fontWeight:700,fontSize:14}}>{title}</div>
+              <div style={{fontSize:12,color:"#aaa",marginTop:1}}>{sub}</div>
+            </div>
+            {nav&&<span style={{color:"#ddd",fontSize:18}}>›</span>}
+          </div>
+        ))}
+
+        <div onClick={handleLogout} style={{...S.card,padding:"14px 16px",marginBottom:10,display:"flex",alignItems:"center",gap:14,cursor:"pointer",backgroundColor:"#FFF0F0"}}>
+          <span style={{fontSize:22}}>🚪</span>
+          <div style={{flex:1}}><div style={{fontWeight:700,fontSize:14,color:"#FF4D00"}}>Logout</div><div style={{fontSize:12,color:"#bbb"}}>See you soon!</div></div>
+        </div>
+      </div>
+      <BottomNav screen={screen} setScreen={setScreen} cartCount={cartCount}/>
+    </div>
+  );
 }
 
 function renderMenuItem(item,rest,cart,addToCart,removeFromCart){
