@@ -1,1 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Zaiqa Delivery</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Nunito',sans-serif;background:#0a0a0a;color:#fff;min-height:100vh;}
+.spin{animation:spin 1s linear infinite;}@keyframes spin{from{transform:rotate(0);}to{transform:rotate(360deg);}}
+.fade{animation:fade .2s ease;}@keyframes fade{from{opacity:0;transform:translateY(5px);}to{opacity:1;}}
+input,button{font-family:'Nunito',sans-serif;}
+.tab-bar{display:flex;position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #1f1f1f;z-index:100;padding:8px 0 12px;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script>
+const {createClient}=window.supabase;
+const db=createClient("https://njxjqkebbloltsedecuh.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qeGpxa2ViYmxvbHRzZWRlY3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDY0NzAsImV4cCI6MjA4ODM4MjQ3MH0.SurEvT-3Kd5rHNMdfmrRd8ZltpCHTs3NoBrV-5PtHw4");
 
+// Hardcoded delivery persons - admin can expand this list
+const RIDERS=[
+  {id:"r1",name:"Arjun Kumar",phone:"9876543210",password:"arjun123",area:"Coimbatore North",emoji:"🏍️"},
+  {id:"r2",name:"Ravi Shankar",phone:"9876543211",password:"ravi123",area:"Coimbatore South",emoji:"🚴"},
+  {id:"r3",name:"Imran Khan",phone:"9876543212",password:"imran123",area:"RS Puram",emoji:"🏍️"},
+];
+
+let S={screen:"login",rider:null,orders:[],tab:"available",form:{phone:"",password:""},err:"",loading:false,activeOrder:null};
+function ss(p){S={...S,...p};render();}
+
+function el(tag,props,...kids){
+  const e=document.createElement(tag);
+  if(props)for(const[k,v]of Object.entries(props)){
+    if(k==="style"&&typeof v==="object")Object.assign(e.style,v);
+    else if(k.startsWith("on"))e.addEventListener(k.slice(2).toLowerCase(),v);
+    else if(k==="cls")e.className=v;
+    else e.setAttribute(k,v);
+  }
+  for(const c of kids.flat(9)){
+    if(c==null||c===false)continue;
+    e.appendChild(typeof c==="string"||typeof c==="number"?document.createTextNode(String(c)):c);
+  }
+  return e;
+}
+function btn(label,cb,bg="#FF6B00",st={}){
+  return el("button",{style:{backgroundColor:bg,color:"#fff",border:"none",borderRadius:12,padding:"12px 20px",fontWeight:800,fontSize:14,cursor:"pointer",...st},onClick:cb},label);
+}
+function card(st,...kids){return el("div",{style:{backgroundColor:"#161616",borderRadius:14,padding:16,border:"1px solid #1f1f1f",...st}},...kids);}
+function inp(ph,val,cb,type="text"){
+  const e=el("input",{type,placeholder:ph,value:val||"",style:{width:"100%",padding:"12px 16px",borderRadius:12,border:"1px solid #2a2a2a",backgroundColor:"#161616",color:"#fff",fontSize:15,outline:"none"}});
+  e.addEventListener("input",ev=>cb(ev.target.value));
+  e.addEventListener("focus",()=>e.style.borderColor="#FF6B00");
+  e.addEventListener("blur",()=>e.style.borderColor="#2a2a2a");
+  return e;
+}
+
+async function loadOrders(){
+  const {data}=await db.from("orders").select("*").in("status",["Preparing","On the Way"]).order("created_at",{ascending:false});
+  ss({orders:data||[]});
+}
+
+function render(){
+  document.getElementById("root").innerHTML="";
+  document.getElementById("root").appendChild(S.screen==="login"?loginScreen():appScreen());
+}
+
+function loginScreen(){
+  const wrap=el("div",{style:{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"radial-gradient(ellipse at 30% 30%,#2a1500,#0a0a0a 60%)",padding:20}});
+  wrap.appendChild(el("div",{style:{width:"100%",maxWidth:340}},
+    el("div",{style:{textAlign:"center",marginBottom:36}},
+      el("div",{style:{fontSize:64,marginBottom:10}},"🏍️"),
+      el("div",{style:{fontSize:24,fontWeight:900,color:"#FF6B00"}},"Rider App"),
+      el("div",{style:{fontSize:13,color:"#444",marginTop:4}},"Zaiqa Delivery Partner")
+    ),
+    S.err?el("div",{style:{backgroundColor:"#EF444420",color:"#EF4444",borderRadius:10,padding:"10px 14px",fontSize:13,fontWeight:700,marginBottom:16}},S.err):null,
+    el("div",{style:{marginBottom:12}},
+      el("div",{style:{fontSize:11,color:"#444",fontWeight:700,marginBottom:6,letterSpacing:.5}},"PHONE NUMBER"),
+      inp("Your phone number",S.form.phone,v=>S.form.phone=v,"tel")
+    ),
+    el("div",{style:{marginBottom:24}},
+      el("div",{style:{fontSize:11,color:"#444",fontWeight:700,marginBottom:6,letterSpacing:.5}},"PASSWORD"),
+      inp("Your password",S.form.password,v=>S.form.password=v,"password")
+    ),
+    btn(S.loading?"Please wait...":"🚀 Start Delivering",()=>{
+      const rider=RIDERS.find(r=>r.phone===S.form.phone&&r.password===S.form.password);
+      if(!rider){ss({err:"❌ Wrong phone or password!"});return;}
+      ss({rider,screen:"app",err:""});
+      loadOrders();
+    },"#FF6B00",{width:"100%",padding:14,fontSize:15}),
+    el("div",{style:{textAlign:"center",marginTop:16,fontSize:12,color:"#333"}},"Contact Zaiqa admin for login details")
+  ));
+  return wrap;
+}
+
+function appScreen(){
+  const wrap=el("div",{style:{minHeight:"100vh",paddingBottom:80}});
+  const available=S.orders.filter(o=>o.status==="Preparing");
+  const myDeliveries=S.orders.filter(o=>o.status==="On the Way");
+
+  // Header
+  wrap.appendChild(el("div",{style:{background:"linear-gradient(135deg,#FF6B00,#ff8c00)",padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}},
+    el("div",{},
+      el("div",{style:{fontWeight:900,fontSize:16}},"Hey, "+S.rider.emoji+" "+S.rider.name.split(" ")[0]+"!"),
+      el("div",{style:{fontSize:11,opacity:.8,marginTop:2}},"Area: "+S.rider.area)
+    ),
+    el("div",{style:{textAlign:"right"}},
+      el("div",{style:{fontSize:22,fontWeight:900}},myDeliveries.length),
+      el("div",{style:{fontSize:10,opacity:.8}},"Active Deliveries")
+    )
+  ));
+
+  const main=el("div",{style:{padding:16}});
+  ({available:availableTab,active:activeTab,earnings:earningsTab}[S.tab]||availableTab)(main,available,myDeliveries);
+
+  wrap.appendChild(main);
+  wrap.appendChild(el("div",{cls:"tab-bar"},
+    ...([["📦","Available","available"],["🏍️","My Deliveries","active"],["💰","Earnings","earnings"]]).map(([icon,lbl,tab])=>
+      el("div",{style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer",color:S.tab===tab?"#FF6B00":"#444",fontSize:10,fontWeight:800},
+        onClick:()=>{ss({tab});if(tab==="available"||tab==="active")loadOrders();}},
+        el("span",{style:{fontSize:22}},icon),lbl,
+        tab==="available"&&available.length?el("div",{style:{backgroundColor:"#FF6B00",color:"#fff",fontSize:9,fontWeight:900,borderRadius:"50%",width:16,height:16,display:"flex",alignItems:"center",justifyContent:"center",marginTop:1}},available.length):null
+      )
+    )
+  ));
+  return wrap;
+}
+
+function availableTab(main,available){
+  const div=el("div",{cls:"fade"});
+  div.appendChild(el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}},
+    el("div",{style:{fontSize:18,fontWeight:900}},"📦 Available Orders"),
+    btn("🔄 Refresh",loadOrders,"#1f1f1f",{padding:"8px 14px",fontSize:13,border:"1px solid #2a2a2a"})
+  ));
+  if(!available.length){
+    div.appendChild(el("div",{style:{textAlign:"center",padding:60,color:"#333"}},
+      el("div",{style:{fontSize:56,marginBottom:12}},"😴"),
+      el("div",{style:{fontSize:16,fontWeight:700,color:"#444"}},"No orders ready for pickup"),
+      el("div",{style:{fontSize:13,marginTop:6}},"Check back in a few minutes")
+    ));
+  }
+  for(const o of available){
+    div.appendChild(card({marginBottom:12},
+      el("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:10}},
+        el("div",{style:{fontWeight:900,fontSize:16}},"Order #"+o.id),
+        el("div",{style:{fontWeight:900,fontSize:18,color:"#FF6B00"}},"₹"+o.total)
+      ),
+      el("div",{style:{backgroundColor:"#FF6B0010",border:"1px solid #FF6B0030",borderRadius:10,padding:12,marginBottom:10}},
+        el("div",{style:{fontSize:12,color:"#FF6B00",fontWeight:700,marginBottom:4}},"📍 PICKUP FROM"),
+        el("div",{style:{fontSize:14,fontWeight:800}},o.restaurant_name||""),
+      ),
+      el("div",{style:{backgroundColor:"#22C55E10",border:"1px solid #22C55E30",borderRadius:10,padding:12,marginBottom:12}},
+        el("div",{style:{fontSize:12,color:"#22C55E",fontWeight:700,marginBottom:4}},"🏠 DELIVER TO"),
+        el("div",{style:{fontSize:13,fontWeight:700}},o.customer_name),
+        el("div",{style:{fontSize:12,color:"#aaa",marginTop:2}},o.customer_address),
+        el("div",{style:{fontSize:12,color:"#666",marginTop:2}},"📱 "+o.customer_phone)
+      ),
+      el("div",{style:{fontSize:13,color:"#555",marginBottom:12}},"🛒 "+o.items),
+      el("div",{style:{display:"flex",gap:8}},
+        btn("✅ Accept & Pick Up",async()=>{
+          await db.from("orders").update({status:"On the Way"}).eq("id",o.id);
+          loadOrders();
+          ss({tab:"active"});
+        },"#FF6B00",{flex:1,fontSize:13,borderRadius:10})
+      )
+    ));
+  }
+  main.appendChild(div);
+}
+
+function activeTab(main,available,myDeliveries){
+  const div=el("div",{cls:"fade"});
+  div.appendChild(el("div",{style:{fontSize:18,fontWeight:900,marginBottom:16}},"🏍️ My Active Deliveries"));
+  if(!myDeliveries.length){
+    div.appendChild(el("div",{style:{textAlign:"center",padding:60,color:"#333"}},
+      el("div",{style:{fontSize:56,marginBottom:12}},"🏍️"),
+      el("div",{style:{fontSize:16,fontWeight:700,color:"#444"}},"No active deliveries"),
+      el("div",{style:{fontSize:13,marginTop:6}},"Accept orders from the Available tab")
+    ));
+  }
+  for(const o of myDeliveries){
+    div.appendChild(card({marginBottom:12,border:"1px solid #FF6B0040"},
+      el("div",{style:{display:"flex",justifyContent:"space-between",marginBottom:12}},
+        el("div",{style:{fontWeight:900,fontSize:16}},"Order #"+o.id),
+        el("div",{style:{backgroundColor:"#8B5CF620",color:"#8B5CF6",padding:"4px 12px",borderRadius:20,fontSize:11,fontWeight:800}},"🚀 On the Way")
+      ),
+      el("div",{style:{fontSize:13,fontWeight:800,marginBottom:4}},"📦 "+o.restaurant_name),
+      el("div",{style:{fontSize:14,fontWeight:800,color:"#fff",marginBottom:2}},"👤 "+o.customer_name),
+      el("div",{style:{fontSize:13,color:"#aaa",marginBottom:2}},"📍 "+o.customer_address),
+      el("div",{style:{fontSize:13,color:"#22C55E",fontWeight:700,marginBottom:4}},"📱 "+o.customer_phone),
+      el("div",{style:{fontSize:13,color:"#555",marginBottom:12}},"🛒 "+o.items),
+      el("div",{style:{display:"flex",gap:8}},
+        btn("📞 Call Customer",()=>window.open("tel:"+o.customer_phone),"#1f1f1f",{flex:1,border:"1px solid #2a2a2a",fontSize:13}),
+        btn("✅ Delivered!",async()=>{
+          await db.from("orders").update({status:"Delivered"}).eq("id",o.id);
+          // Update customer stats
+          if(o.customer_id){
+            const {data:c}=await db.from("customers").select("total_orders,total_spent").eq("id",o.customer_id).limit(1);
+            if(c&&c[0]){await db.from("customers").update({total_orders:(c[0].total_orders||0)+1,total_spent:(c[0].total_spent||0)+(o.total||0)}).eq("id",o.customer_id);}
+          }
+          loadOrders();
+        },"#22C55E",{flex:1,fontSize:13})
+      )
+    ));
+  }
+  main.appendChild(div);
+}
+
+function earningsTab(main){
+  const div=el("div",{cls:"fade"});
+  div.appendChild(el("div",{style:{fontSize:18,fontWeight:900,marginBottom:20}},"💰 Earnings"));
+  // Per-delivery earnings (₹30 per delivery assumed)
+  const PER_DELIVERY=30;
+  const delivered=S.orders.filter(o=>o.status==="Delivered");
+  const today=delivered.filter(o=>new Date(o.created_at).toDateString()===new Date().toDateString());
+  const thisWeek=delivered.filter(o=>{const d=new Date(o.created_at);const now=new Date();const diff=(now-d)/(1000*60*60*24);return diff<=7;});
+
+  const grid=el("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:24}});
+  for(const[icon,lbl,val,c]of[
+    ["📅","Today","₹"+(today.length*PER_DELIVERY),"#22C55E"],
+    ["📆","This Week","₹"+(thisWeek.length*PER_DELIVERY),"#3B82F6"],
+    ["✅","Total Delivered",delivered.length,"#FF6B00"],
+    ["🚀","Total Earned","₹"+(delivered.length*PER_DELIVERY),"#F59E0B"],
+  ]){
+    grid.appendChild(card({padding:14,borderLeft:`3px solid ${c}`},
+      el("div",{style:{fontSize:26,marginBottom:6}},icon),
+      el("div",{style:{fontSize:20,fontWeight:900,color:c}},val),
+      el("div",{style:{fontSize:11,color:"#555",marginTop:2}},lbl)
+    ));
+  }
+  div.appendChild(grid);
+  div.appendChild(card({},
+    el("div",{style:{fontSize:14,fontWeight:800,marginBottom:12,color:"#aaa"}},"💡 Earning Info"),
+    el("div",{style:{fontSize:13,color:"#666",lineHeight:1.7}},"• ₹"+PER_DELIVERY+" per successful delivery"),
+    el("div",{style:{fontSize:13,color:"#666"}},"• Paid weekly every Monday"),
+    el("div",{style:{fontSize:13,color:"#666"}},"• Bonus for 10+ deliveries/day: ₹50 extra")
+  ));
+  div.appendChild(btn("🚪 Logout",()=>ss({screen:"login",rider:null,orders:[],tab:"available",form:{phone:"",password:""},err:""}),"#EF444420",{marginTop:20,width:"100%",border:"1px solid #EF4444",color:"#EF4444"}));
+  main.appendChild(div);
+}
+
+render();
+</script>
+</body>
+</html>
