@@ -91,12 +91,20 @@ function AuthScreen({onAuth}){
   const [resetSent,setResetSent]=useState(false);
 
   const forgotPassword=async()=>{
-    if(!form.email||!form.email.includes("@")){setErr("Enter your email first!");return;}
+    if(!form.email||!form.email.includes("@")){setErr("Enter your email first, then tap Forgot Password!");return;}
     setLoading(true);setErr("");
     try{
-      await auth.sendPasswordResetEmail(form.email);
+      await auth.sendPasswordResetEmail(form.email,{
+        url:"https://zaiqanet.netlify.app",
+        handleCodeInApp:false
+      });
       setResetSent(true);
-    }catch(e){setErr("Could not send reset email. Check the email address!");}
+    }catch(e){
+      const code=e.code||"";
+      if(code==="auth/user-not-found")setErr("No account found with this email!");
+      else if(code==="auth/invalid-email")setErr("Invalid email address!");
+      else setErr("Could not send reset email. Try again!");
+    }
     setLoading(false);
   };
 
@@ -132,35 +140,43 @@ function AuthScreen({onAuth}){
     if(form.password.length<6){setErr("Password must be at least 6 characters!");return;}
     setLoading(true);setErr("");
     try{
-      let fbUser;
       if(mode==="signup"){
+        // Create Firebase account
         const r=await auth.createUserWithEmailAndPassword(form.email,form.password);
-        fbUser=r.user;
-        await fbUser.updateProfile({displayName:form.name});
-        const {data:nu}=await db.from("customers").insert([{name:form.name,email:form.email,phone:"",profile_emoji:"😊",total_orders:0,total_spent:0,saved_addresses:[]}]).select().single();
-        onAuth(nu);
+        await r.user.updateProfile({displayName:form.name});
+        // Save to Supabase
+        const {data:nu,error}=await db.from("customers").insert([{
+          name:form.name,email:form.email,phone:"",
+          profile_emoji:"😊",total_orders:0,total_spent:0,saved_addresses:[]
+        }]).select();
+        const customer=(nu&&nu[0])||{name:form.name,email:form.email,profile_emoji:"😊",total_orders:0,total_spent:0,saved_addresses:[]};
+        onAuth(customer);
       } else {
+        // Sign in with Firebase
         const r=await auth.signInWithEmailAndPassword(form.email,form.password);
-        fbUser=r.user;
-        let ex=null;
-        try{
-          const {data}=await db.from("customers").select("*").eq("email",form.email).single();
-          ex=data;
-        }catch(e){ex=null;}
-        if(!ex){
-          const {data:nu}=await db.from("customers").insert([{name:fbUser.displayName||"Zaiqa User",email:form.email,phone:"",profile_emoji:"😊",total_orders:0,total_spent:0,saved_addresses:[]}]).select().single();
-          ex=nu;
+        const fbUser=r.user;
+        // Fetch from Supabase
+        const {data:rows}=await db.from("customers").select("*").eq("email",form.email).limit(1);
+        let customer=rows&&rows[0];
+        if(!customer){
+          // Create Supabase record if missing
+          const {data:nu}=await db.from("customers").insert([{
+            name:fbUser.displayName||form.email.split("@")[0],
+            email:form.email,phone:"",profile_emoji:"😊",
+            total_orders:0,total_spent:0,saved_addresses:[]
+          }]).select();
+          customer=(nu&&nu[0])||{name:form.email.split("@")[0],email:form.email,profile_emoji:"😊",total_orders:0,total_spent:0,saved_addresses:[]};
         }
-        onAuth(ex);
+        onAuth(customer);
       }
     }catch(e){
       const code=e.code||"";
       if(code==="auth/email-already-in-use")setErr("Account already exists! Please login.");
       else if(code==="auth/wrong-password"||code==="auth/invalid-credential"||code==="auth/invalid-login-credentials")setErr("Wrong email or password. Try again!");
       else if(code==="auth/user-not-found")setErr("No account found. Please sign up!");
-      else if(code==="auth/too-many-requests")setErr("Too many attempts. Wait a few minutes and try again!");
-      else if(code==="auth/network-request-failed")setErr("No internet connection. Check your network!");
-      else setErr("Error: "+(e.message||"Something went wrong. Try again!"));
+      else if(code==="auth/too-many-requests")setErr("Too many attempts. Wait a few minutes!");
+      else if(code==="auth/network-request-failed")setErr("No internet. Check your connection!");
+      else setErr("Error: "+(e.message||"Something went wrong!"));
     }
     setLoading(false);
   };
