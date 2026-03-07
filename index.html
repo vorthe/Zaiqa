@@ -114,7 +114,7 @@ function AuthScreen({onAuth}){
     auth.getRedirectResult().then(async(result)=>{
       if(result&&result.user){
         const u=result.user;
-        let {data:ex}=await db.from("customers").select("*").eq("email",u.email).single().catch(()=>({data:null}));
+        let {data:ex}=await db.from("customers").select("*").eq("email",u.email).single().then(r=>r).catch(()=>({data:null}));
         if(!ex){
           const {data:nu}=await db.from("customers").insert([{name:u.displayName||"Zaiqa User",email:u.email,phone:"",profile_emoji:"😊",total_orders:0,total_spent:0,saved_addresses:[]}]).select().single();
           ex=nu;
@@ -142,7 +142,11 @@ function AuthScreen({onAuth}){
       } else {
         const r=await auth.signInWithEmailAndPassword(form.email,form.password);
         fbUser=r.user;
-        let {data:ex}=await db.from("customers").select("*").eq("email",form.email).single().catch(()=>({data:null}));
+        let ex=null;
+        try{
+          const {data}=await db.from("customers").select("*").eq("email",form.email).single();
+          ex=data;
+        }catch(e){ex=null;}
         if(!ex){
           const {data:nu}=await db.from("customers").insert([{name:fbUser.displayName||"Zaiqa User",email:form.email,phone:"",profile_emoji:"😊",total_orders:0,total_spent:0,saved_addresses:[]}]).select().single();
           ex=nu;
@@ -459,12 +463,12 @@ function App(){
     try{
       let fresh=null;
       if(u.id){
-        const {data}=await db.from("customers").select("*").eq("id",u.id).single();
-        fresh=data;
+        const r=await db.from("customers").select("*").eq("id",u.id).single();
+        fresh=r.data||null;
       }
       if(!fresh&&u.email){
-        const {data}=await db.from("customers").select("*").eq("email",u.email).single();
-        fresh=data;
+        const r=await db.from("customers").select("*").eq("email",u.email).single();
+        fresh=r.data||null;
       }
       const finalUser=fresh||u;
       setUser(finalUser);
