@@ -421,15 +421,7 @@ function App(){
       try{
         const u=JSON.parse(saved);
         setUser(u);
-        setAuthLoading(false);
         fetchRestaurants();
-        // Refresh profile from Supabase in background
-        if(u.id){
-          db.from("customers").select("*").eq("id",u.id).single().then(({data})=>{
-            if(data){setUser(data);localStorage.setItem("zaiqaUser",JSON.stringify(data));}
-          }).catch(()=>{});
-        }
-        return;
       }catch(e){}
     }
     setAuthLoading(false);
@@ -458,27 +450,11 @@ function App(){
 
   useEffect(()=>{if(user&&screen==="myorders")fetchMyOrders();},[user,screen]);
 
-  const handleAuth=async(u)=>{
-    // Always fetch fresh data from Supabase by id or email
-    try{
-      let fresh=null;
-      if(u.id){
-        const r=await db.from("customers").select("*").eq("id",u.id).single();
-        fresh=r.data||null;
-      }
-      if(!fresh&&u.email){
-        const r=await db.from("customers").select("*").eq("email",u.email).single();
-        fresh=r.data||null;
-      }
-      const finalUser=fresh||u;
-      setUser(finalUser);
-      localStorage.setItem("zaiqaUser",JSON.stringify(finalUser));
-      fetchRestaurants();
-    }catch(e){
-      setUser(u);
-      localStorage.setItem("zaiqaUser",JSON.stringify(u));
-      fetchRestaurants();
-    }
+  const handleAuth=(u)=>{
+    if(!u)return;
+    setUser(u);
+    localStorage.setItem("zaiqaUser",JSON.stringify(u));
+    fetchRestaurants();
   };
   const handleLogout=()=>{auth.signOut();localStorage.removeItem("zaiqaUser");setUser(null);};
 
