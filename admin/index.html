@@ -2,24 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Zaiqa Admin Panel</title>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Zaiqa Admin</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-<script src="https://vorthe.github.io/Zaiqa/zaiqa-app.jsx" type="text/babel"></script>
-  
-<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{font-family:'Nunito',sans-serif;background:#0F0F0F;color:#fff;min-height:100vh;}
-::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-thumb{background:#FF4D00;border-radius:3px;}
-.fade{animation:fade 0.2s ease;}@keyframes fade{from{opacity:0;transform:translateY(6px);}to{opacity:1;}}
-.spin{animation:spin 1s linear infinite;}@keyframes spin{from{transform:rotate(0);}to{transform:rotate(360deg);}}
-input,select,button,textarea{font-family:'Nunito',sans-serif;}
-.sidebar{width:210px;background:#111;border-right:1px solid #1f1f1f;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:50;}
-.main{margin-left:210px;padding:24px;padding-bottom:80px;min-height:100vh;}
-.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:#111;border-top:1px solid #222;z-index:100;padding:8px 0 12px;}
-@media(max-width:700px){.sidebar{display:none!important;}.main{margin-left:0!important;}.mob-nav{display:flex!important;}}
+body{font-family:'Poppins',sans-serif;background:#F0F4FF;color:#1a1a2e;min-height:100vh;}
+input,select,button,textarea{font-family:'Poppins',sans-serif;}
+::-webkit-scrollbar{width:4px;}::-webkit-scrollbar-thumb{background:#CBD5E1;border-radius:4px;}
+.fade{animation:fadeUp .3s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}
+@keyframes spin{from{transform:rotate(0);}to{transform:rotate(360deg);}}
+@keyframes slideIn{from{transform:translateX(-100%);}to{transform:translateX(0);}}
+.spin{animation:spin 1s linear infinite;display:inline-block;}
+.slide{animation:slideIn .3s cubic-bezier(.4,0,.2,1);}
 </style>
 </head>
 <body>
@@ -28,478 +25,504 @@ input,select,button,textarea{font-family:'Nunito',sans-serif;}
 const {createClient}=window.supabase;
 const db=createClient("https://njxjqkebbloltsedecuh.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qeGpxa2ViYmxvbHRzZWRlY3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDY0NzAsImV4cCI6MjA4ODM4MjQ3MH0.SurEvT-3Kd5rHNMdfmrRd8ZltpCHTs3NoBrV-5PtHw4");
 const ADMIN_EMAIL="faizan@zaiqa.com",ADMIN_PASS="Zaiqa@2025";
-const STATUS_C={Pending:"#F59E0B",Preparing:"#3B82F6","On the Way":"#8B5CF6",Delivered:"#22C55E",Cancelled:"#EF4444"};
-const CATS=["Biryani","Pizza","Burgers","South Indian","Chinese","Kebabs","Sushi","Mexican","Desserts","Drinks","Snacks","Healthy"];
-const EMOJIS=["🍛","🍕","🍔","🥞","🍜","🍢","🍱","🌮","🍰","🥤","🍟","🥗","🍖","🍣","🧆","🥙","🍝","🥘","🫕","🧁"];
 
-let S={loggedIn:false,tab:"dashboard",restaurants:[],orders:[],customers:[],menuItems:{},owners:[],loading:false,modal:null,search:"",orderFilter:""};
-function ss(p){S={...S,...p};render();}
+let S={page:"login",tab:"dashboard",menuOpen:false,data:{restaurants:[],orders:[],customers:[],owners:[],riders:[]},loading:false,modal:null,form:{email:"",pass:""},err:"",orderFilter:""};
+function ss(p){S={...S,...p};if(p.data)S.data={...S.data,...p.data};render();}
 
-// HELPERS
-function el(tag,props,...kids){
+function h(tag,props={},...kids){
   const e=document.createElement(tag);
-  if(props)for(const[k,v]of Object.entries(props)){
+  for(const[k,v]of Object.entries(props)){
     if(k==="style"&&typeof v==="object")Object.assign(e.style,v);
-    else if(k.startsWith("on"))e.addEventListener(k.slice(2).toLowerCase(),v);
     else if(k==="cls")e.className=v;
+    else if(k.startsWith("on"))e.addEventListener(k.slice(2).toLowerCase(),v);
     else e.setAttribute(k,v);
   }
-  for(const c of kids.flat(9)){
-    if(c==null||c===false)continue;
-    e.appendChild(typeof c==="string"||typeof c==="number"?document.createTextNode(String(c)):c);
-  }
+  kids.flat(9).forEach(c=>{if(c==null||c===false||c===undefined)return;e.appendChild(typeof c==="string"||typeof c==="number"?document.createTextNode(String(c)):c);});
   return e;
 }
-function inp(ph,val,cb,type="text",st={}){
-  const e=el("input",{type,placeholder:ph,value:val||"",style:{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #333",backgroundColor:"#1a1a1a",color:"#fff",fontSize:14,outline:"none",...st}});
+const div=(p,...k)=>h("div",p,...k);
+const span=(p,...k)=>h("span",p,...k);
+
+function btn(label,cb,type="primary",extra={}){
+  const styles={
+    primary:{background:"linear-gradient(135deg,#2563EB,#1D4ED8)",color:"#fff",border:"none",boxShadow:"0 4px 15px rgba(37,99,235,.3)"},
+    white:{background:"#fff",color:"#2563EB",border:"1px solid #DBEAFE"},
+    danger:{background:"#FEE2E2",color:"#DC2626",border:"1px solid #FECACA"},
+    success:{background:"#DCFCE7",color:"#16A34A",border:"1px solid #BBF7D0"},
+    ghost:{background:"transparent",color:"#64748B",border:"1px solid #E2E8F0"},
+  };
+  return h("button",{style:{...styles[type]||styles.primary,padding:"11px 20px",borderRadius:12,fontWeight:600,fontSize:13,cursor:"pointer",transition:"all .2s",whiteSpace:"nowrap",...extra},onClick:cb},label);
+}
+
+function card(style={},...kids){
+  return div({style:{background:"#fff",borderRadius:18,padding:20,boxShadow:"0 2px 20px rgba(0,0,0,.06)",border:"1px solid #EEF2FF",...style}},...kids);
+}
+
+function inp(ph,val,cb,type="text",extra={}){
+  const e=h("input",{type,placeholder:ph,value:val||"",style:{width:"100%",padding:"13px 16px",background:"#F8FAFF",border:"2px solid #E8EEFF",borderRadius:12,color:"#1a1a2e",fontSize:14,outline:"none",transition:"border .2s",...extra}});
   e.addEventListener("input",ev=>cb(ev.target.value));
-  e.addEventListener("focus",()=>e.style.borderColor="#FF4D00");
-  e.addEventListener("blur",()=>e.style.borderColor="#333");
+  e.addEventListener("focus",()=>e.style.borderColor="#2563EB");
+  e.addEventListener("blur",()=>e.style.borderColor="#E8EEFF");
   return e;
 }
-function sel(opts,val,cb,st={}){
-  const e=el("select",{style:{width:"100%",padding:"10px 14px",borderRadius:10,border:"1px solid #333",backgroundColor:"#1a1a1a",color:"#fff",fontSize:14,outline:"none",cursor:"pointer",...st}});
-  for(const o of opts){const opt=el("option",{value:o},o);if(o===val)opt.selected=true;e.appendChild(opt);}
+
+function sel(options,value,cb,extra={}){
+  const e=h("select",{style:{width:"100%",padding:"13px 16px",background:"#F8FAFF",border:"2px solid #E8EEFF",borderRadius:12,color:"#1a1a2e",fontSize:14,outline:"none",...extra}});
+  options.forEach(([v,l])=>{const o=h("option",{value:v},l);if(v===value)o.selected=true;e.appendChild(o);});
   e.addEventListener("change",ev=>cb(ev.target.value));
   return e;
 }
-function btn(label,cb,bg="#FF4D00",st={}){
-  return el("button",{style:{backgroundColor:bg,color:bg==="transparent"?"#aaa":"#fff",border:"none",borderRadius:10,padding:"10px 20px",fontWeight:700,fontSize:14,cursor:"pointer",...st},onClick:cb},label);
+
+function toggle(active,cb){
+  const w=div({style:{width:48,height:26,borderRadius:13,background:active?"#2563EB":"#CBD5E1",cursor:"pointer",position:"relative",transition:"background .25s",flexShrink:0}});
+  w.appendChild(div({style:{position:"absolute",top:3,left:active?25:3,width:20,height:20,borderRadius:"50%",background:"#fff",transition:"left .25s",boxShadow:"0 1px 4px rgba(0,0,0,.2)"}}));
+  w.addEventListener("click",()=>cb(!active));
+  return w;
 }
-function badge(text,color){
-  return el("span",{style:{backgroundColor:color+"22",color,padding:"3px 12px",borderRadius:20,fontSize:11,fontWeight:700,whiteSpace:"nowrap"}},text);
+
+function badge(lbl,color="#2563EB"){
+  return span({style:{background:color+"15",color,border:`1px solid ${color}30`,padding:"4px 12px",borderRadius:20,fontSize:11,fontWeight:600}},lbl);
 }
-function card(st={},...kids){
-  return el("div",{style:{backgroundColor:"#1A1A1A",borderRadius:14,padding:18,border:"1px solid #252525",...st}},...kids);
-}
-function loader(){
-  return el("div",{style:{display:"flex",justifyContent:"center",padding:60}},
-    el("div",{cls:"spin",style:{width:36,height:36,border:"3px solid #FF4D0030",borderTop:"3px solid #FF4D00",borderRadius:"50%"}})
-  );
-}
-function row(...items){return el("div",{style:{display:"flex",gap:10,flexWrap:"wrap"}},...items);}
-function label(text){return el("div",{style:{fontSize:11,color:"#555",fontWeight:700,marginBottom:5,letterSpacing:.5}},text);}
-function field(lbl,child){return el("div",{style:{marginBottom:12}},label(lbl.toUpperCase()),child);}
-function toggle(val,cb){
-  return el("div",{style:{width:44,height:26,borderRadius:13,backgroundColor:val?"#22C55E":"#333",cursor:"pointer",position:"relative",transition:"all .2s",flexShrink:0},onClick:cb},
-    el("div",{style:{width:20,height:20,borderRadius:"50%",backgroundColor:"#fff",position:"absolute",top:3,left:val?21:3,transition:"all .2s"}})
+
+function field(lbl,...kids){
+  return div({style:{marginBottom:16}},
+    div({style:{fontSize:11,fontWeight:700,color:"#94A3B8",letterSpacing:1,marginBottom:7}},lbl),
+    ...kids
   );
 }
 
-// DATA
 async function loadAll(){
   ss({loading:true});
-  const [r,o,c,ow]=await Promise.all([
-    db.from("restaurants").select("*").order("created_at",{ascending:false}),
-    db.from("orders").select("*").order("created_at",{ascending:false}),
-    db.from("customers").select("*").order("created_at",{ascending:false}),
-    db.from("restaurant_owners").select("*").order("created_at",{ascending:false}).catch(()=>({data:[]})),
-  ]);
-  ss({restaurants:r.data||[],orders:o.data||[],customers:c.data||[],owners:ow.data||[],loading:false});
-}
-async function loadMenu(rid){
-  const {data}=await db.from("menu_items").select("*").eq("restaurant_id",rid).order("veg",{ascending:false});
-  ss({menuItems:{...S.menuItems,[rid]:data||[]}});
+  try{
+    const [r,o,c,ow,ri]=await Promise.all([
+      db.from("restaurants").select("*").order("created_at",{ascending:false}),
+      db.from("orders").select("*").order("created_at",{ascending:false}),
+      db.from("customers").select("*").order("created_at",{ascending:false}),
+      db.from("restaurant_owners").select("*").order("created_at",{ascending:false}),
+      db.from("delivery_riders").select("*").order("created_at",{ascending:false}),
+    ]);
+    ss({loading:false,data:{restaurants:r.data||[],orders:o.data||[],customers:c.data||[],owners:ow.data||[],riders:ri.data||[]}});
+  }catch(e){ss({loading:false});}
 }
 
-// RENDER
 function render(){
-  const root=document.getElementById("root");
-  root.innerHTML="";
-  root.appendChild(S.loggedIn?appShell():loginScreen());
+  document.getElementById("root").innerHTML="";
+  if(S.page==="login"){document.getElementById("root").appendChild(loginPage());return;}
+  document.getElementById("root").appendChild(appShell());
+  if(S.modal)document.getElementById("root").appendChild(modalOverlay());
 }
 
-// LOGIN
-function loginScreen(){
-  let email="",pass="",err="",loading=false;
-  const wrap=el("div",{style:{minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",background:"radial-gradient(ellipse at 20% 20%,#2a0d00,#0F0F0F 60%)"}});
-  function draw(){
-    wrap.innerHTML="";
-    const loginBtn=btn(loading?"Please wait...":"🔐 Login to Dashboard",async()=>{
-      if(loading)return;
-      if(email===ADMIN_EMAIL&&pass===ADMIN_PASS){ss({loggedIn:true});loadAll();}
-      else{err="❌ Invalid credentials!";draw();}
-    },"#FF4D00",{width:"100%",padding:14,fontSize:15,borderRadius:12,opacity:loading?.6:1});
-    wrap.appendChild(card({width:360,padding:40},
-      el("div",{style:{textAlign:"center",marginBottom:30}},
-        el("div",{style:{fontSize:56,marginBottom:8}},"🍽️"),
-        el("div",{style:{fontSize:26,fontWeight:900,color:"#FF4D00"}},"Zaiqa Admin"),
-        el("div",{style:{fontSize:12,color:"#444",marginTop:4}},"Restricted Access Only")
+// LOGIN PAGE
+function loginPage(){
+  const d=S.form;
+  return div({style:{minHeight:"100vh",background:"linear-gradient(160deg,#EEF2FF 0%,#DBEAFE 50%,#EDE9FE 100%)",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:24}},
+    div({style:{width:"100%",maxWidth:380}},
+      div({style:{textAlign:"center",marginBottom:40}},
+        div({style:{width:72,height:72,borderRadius:20,background:"linear-gradient(135deg,#2563EB,#1D4ED8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,margin:"0 auto 16px",boxShadow:"0 8px 25px rgba(37,99,235,.35)"}}),"🍽️",
+        div({style:{fontSize:26,fontWeight:800,color:"#1E3A8A",marginBottom:6}}),"Zaiqa Admin",
+        div({style:{fontSize:13,color:"#64748B"}}),"Secure dashboard access"
       ),
-      err?el("div",{style:{backgroundColor:"#FF4D0020",color:"#FF4D00",borderRadius:10,padding:"10px 14px",fontSize:13,fontWeight:700,marginBottom:16}},err):null,
-      field("Email Address",inp("Admin email",email,v=>email=v,"email")),
-      field("Password",inp("Admin password",pass,v=>pass=v,"password")),
-      loginBtn
-    ));
-  }
-  draw();
-  return wrap;
-}
-
-// APP SHELL
-function appShell(){
-  const tabs=[["📊","Dashboard","dashboard"],["🏪","Restaurants","restaurants"],["📋","Orders","orders"],["👥","Customers","customers"],["👨‍💼","Owners","owners"]];
-  const wrap=el("div",{style:{display:"flex",minHeight:"100vh"}});
-
-  const sidebar=el("div",{cls:"sidebar"},
-    el("div",{style:{padding:"22px 18px",borderBottom:"1px solid #1f1f1f"}},
-      el("div",{style:{fontSize:20,fontWeight:900,color:"#FF4D00"}},"🍽️ Zaiqa"),
-      el("div",{style:{fontSize:11,color:"#444",marginTop:2}},"Admin Panel")
-    ),
-    el("div",{style:{flex:1,padding:"10px 8px"}},
-      ...tabs.map(([icon,lbl,tab])=>el("div",{
-        style:{padding:"11px 14px",borderRadius:10,cursor:"pointer",marginBottom:3,display:"flex",alignItems:"center",gap:10,
-          backgroundColor:S.tab===tab?"#FF4D0018":"transparent",color:S.tab===tab?"#FF4D00":"#777",fontWeight:S.tab===tab?800:600,fontSize:14},
-        onClick:()=>ss({tab,modal:null,search:"",orderFilter:""})},
-        el("span",{style:{fontSize:18}},icon),lbl
-      ))
-    ),
-    el("div",{style:{padding:"14px 16px",borderTop:"1px solid #1f1f1f"}},
-      el("div",{style:{fontSize:11,color:"#444"}},"Logged in as"),
-      el("div",{style:{fontSize:12,color:"#FF4D00",fontWeight:700,marginTop:2}},"faizan@zaiqa.com"),
-      btn("Logout",()=>ss({loggedIn:false}),"#1f1f1f",{width:"100%",marginTop:10,fontSize:12,border:"1px solid #333",color:"#888"})
+      card({padding:28,boxShadow:"0 8px 40px rgba(37,99,235,.12)"},
+        S.err?div({style:{background:"#FEE2E2",border:"1px solid #FECACA",borderRadius:10,padding:"12px 16px",color:"#DC2626",fontSize:13,fontWeight:600,marginBottom:16,textAlign:"center"}},S.err):null,
+        field("EMAIL ADDRESS",inp("faizan@zaiqa.com",d.email,v=>{d.email=v;},"email")),
+        field("PASSWORD",inp("Enter your password",d.pass,v=>{d.pass=v;},"password")),
+        btn(S.loading?"Signing in...":"Sign In →",()=>{
+          if(d.email===ADMIN_EMAIL&&d.pass===ADMIN_PASS){ss({page:"app",err:""});loadAll();}
+          else ss({err:"Invalid credentials!"});
+        },"primary",{width:"100%",padding:14,fontSize:15,borderRadius:14,marginTop:4})
+      )
     )
   );
+}
 
-  const mobNav=el("div",{cls:"mob-nav"},
-    ...tabs.map(([icon,lbl,tab])=>el("div",{
-      style:{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer",color:S.tab===tab?"#FF4D00":"#555",fontSize:10,fontWeight:700},
-      onClick:()=>ss({tab,modal:null,search:"",orderFilter:""})},
-      el("span",{style:{fontSize:20}},icon),lbl
-    ))
+// APP SHELL WITH HAMBURGER
+function appShell(){
+  const menuItems=[
+    ["📊","Dashboard","dashboard"],
+    ["🏪","Restaurants","restaurants"],
+    ["📋","Orders","orders"],
+    ["👥","Customers","customers"],
+    ["👨‍💼","Owners","owners"],
+    ["🏍️","Riders","riders"],
+  ];
+  const tabNames={dashboard:"Dashboard",restaurants:"Restaurants",orders:"Orders",customers:"Customers",owners:"Owners",riders:"Riders"};
+  const wrap=div({style:{minHeight:"100vh",background:"#F0F4FF"}});
+
+  // TOP BAR
+  const topBar=div({style:{background:"#fff",padding:"0 20px",height:60,display:"flex",alignItems:"center",justifyContent:"space-between",boxShadow:"0 2px 12px rgba(37,99,235,.08)",position:"sticky",top:0,zIndex:100}});
+  
+  // Hamburger
+  const hamBtn=div({style:{width:40,height:40,borderRadius:10,background:"#F0F4FF",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:5,cursor:"pointer"}},
+    div({style:{width:20,height:2,background:"#2563EB",borderRadius:2}}),
+    div({style:{width:16,height:2,background:"#2563EB",borderRadius:2}}),
+    div({style:{width:20,height:2,background:"#2563EB",borderRadius:2}})
   );
+  hamBtn.addEventListener("click",()=>ss({menuOpen:!S.menuOpen}));
 
-  const main=el("div",{cls:"main"});
-  if(S.loading){main.appendChild(loader());}
-  else{
-    ({dashboard:dashboardTab,restaurants:restaurantsTab,orders:ordersTab,customers:customersTab,owners:ownersTab}[S.tab]||dashboardTab)(main);
+  topBar.appendChild(hamBtn);
+  topBar.appendChild(div({style:{display:"flex",alignItems:"center",gap:8}},
+    div({style:{fontSize:18,fontWeight:800,color:"#1E3A8A"}}),tabNames[S.tab]||"Dashboard"
+  ));
+  topBar.appendChild(div({style:{display:"flex",gap:8}},
+    div({style:{width:40,height:40,borderRadius:10,background:"#F0F4FF",display:"flex",alignItems:"center",justifyContent:"center",cursor:"pointer",fontSize:18}},
+      "🔄"
+    )
+  ));
+  topBar.querySelector(".\\🔄")
+  // make refresh work
+  topBar.lastChild.firstChild.addEventListener("click",loadAll);
+  wrap.appendChild(topBar);
+
+  // SLIDE MENU
+  if(S.menuOpen){
+    // Backdrop
+    const backdrop=div({style:{position:"fixed",inset:0,background:"rgba(15,23,42,.5)",zIndex:200,backdropFilter:"blur(3px)"}});
+    backdrop.addEventListener("click",()=>ss({menuOpen:false}));
+    wrap.appendChild(backdrop);
+
+    // Drawer
+    const drawer=div({cls:"slide",style:{position:"fixed",top:0,left:0,bottom:0,width:280,background:"#fff",zIndex:300,display:"flex",flexDirection:"column",boxShadow:"4px 0 30px rgba(0,0,0,.12)"}});
+    
+    // Drawer header
+    drawer.appendChild(div({style:{background:"linear-gradient(135deg,#1E3A8A,#2563EB)",padding:"32px 24px 24px"}},
+      div({style:{width:52,height:52,borderRadius:14,background:"rgba(255,255,255,.2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,marginBottom:12}}),"🍽️",
+      div({style:{fontSize:18,fontWeight:800,color:"#fff"}}),"Zaiqa Admin",
+      div({style:{fontSize:12,color:"rgba(255,255,255,.6)",marginTop:4}}),"Control Panel"
+    ));
+
+    // Menu items
+    const menuList=div({style:{flex:1,padding:"16px 12px",overflowY:"auto"}});
+    menuItems.forEach(([icon,label,key])=>{
+      const active=S.tab===key;
+      const item=div({style:{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:14,marginBottom:4,cursor:"pointer",background:active?"linear-gradient(135deg,#EEF2FF,#DBEAFE)":"transparent",color:active?"#2563EB":"#475569",fontWeight:active?700:500,fontSize:14,transition:"all .2s"}},
+        span({style:{fontSize:22,width:28,textAlign:"center"}}),icon,
+        span({},label)
+      );
+      if(active){item.appendChild(span({style:{marginLeft:"auto",width:8,height:8,borderRadius:"50%",background:"#2563EB",flexShrink:0}}));}
+      item.addEventListener("click",()=>ss({tab:key,menuOpen:false}));
+      menuList.appendChild(item);
+    });
+    drawer.appendChild(menuList);
+
+    // Logout
+    drawer.appendChild(div({style:{padding:"16px 12px",borderTop:"1px solid #EEF2FF"}},
+      div({style:{display:"flex",alignItems:"center",gap:14,padding:"14px 16px",borderRadius:14,cursor:"pointer",color:"#DC2626",fontWeight:600,fontSize:14,background:"#FEF2F2"},onClick:()=>ss({page:"login",menuOpen:false,form:{email:"",pass:""}})},
+        span({style:{fontSize:22}}),"🚪",
+        span({}),"Logout"
+      )
+    ));
+    wrap.appendChild(drawer);
   }
-  if(S.modal)wrap.appendChild(modalOverlay());
-  wrap.appendChild(sidebar);
-  wrap.appendChild(main);
-  wrap.appendChild(mobNav);
+
+  // CONTENT
+  const content=div({style:{padding:"20px 16px 40px",minHeight:"calc(100vh - 60px)"}});
+  if(S.loading){
+    content.appendChild(div({style:{display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"80px 20px",gap:16}},
+      div({style:{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#2563EB,#1D4ED8)",display:"flex",alignItems:"center",justifyContent:"center"}},span({cls:"spin",style:{fontSize:22,color:"#fff"}}),"⚙️"),
+      div({style:{fontSize:14,color:"#64748B",fontWeight:500}}),"Loading data..."
+    ));
+  } else {
+    ({dashboard:dashTab,restaurants:restTab,orders:ordTab,customers:custTab,owners:ownTab,riders:riderTab}[S.tab]||dashTab)(content);
+  }
+  wrap.appendChild(content);
   return wrap;
+}
+
+// STAT CARD
+function statCard(icon,label,value,color,bg){
+  return card({padding:20,display:"flex",alignItems:"center",gap:16},
+    div({style:{width:52,height:52,borderRadius:14,background:bg,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}}),icon,
+    div({},
+      div({style:{fontSize:24,fontWeight:800,color}}),value,
+      div({style:{fontSize:12,color:"#94A3B8",fontWeight:500,marginTop:2}},label)
+    )
+  );
 }
 
 // DASHBOARD
-function dashboardTab(main){
-  const orders=S.orders;
-  const revenue=orders.filter(o=>o.status==="Delivered").reduce((s,o)=>s+(o.total||0),0);
-  const pending=orders.filter(o=>o.status==="Pending").length;
-  const today=orders.filter(o=>new Date(o.created_at).toDateString()===new Date().toDateString());
-  const div=el("div",{cls:"fade"});
-  div.appendChild(el("div",{style:{fontSize:22,fontWeight:900,marginBottom:22}},"📊 Dashboard"));
-  const grid=el("div",{style:{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(150px,1fr))",gap:14,marginBottom:26}});
-  for(const[icon,lbl,val,color]of[
-    ["📦","Total Orders",orders.length,"#FF4D00"],
-    ["💰","Revenue Earned","₹"+revenue.toLocaleString(),"#22C55E"],
-    ["👥","Customers",S.customers.length,"#3B82F6"],
-    ["🏪","Restaurants",S.restaurants.length,"#8B5CF6"],
-    ["⏳","Pending",pending,"#F59E0B"],
-    ["📅","Today",today.length,"#EC4899"],
-  ]){
-    grid.appendChild(card({padding:16,borderLeft:`3px solid ${color}`},
-      el("div",{style:{fontSize:28,marginBottom:6}},icon),
-      el("div",{style:{fontSize:22,fontWeight:900,color}},""+val),
-      el("div",{style:{fontSize:12,color:"#666",marginTop:3}},lbl)
-    ));
-  }
-  div.appendChild(grid);
-  div.appendChild(el("div",{style:{fontSize:16,fontWeight:800,marginBottom:14,color:"#ccc"}},"🕐 Recent Orders"));
-  const tbl=el("div",{style:{overflowX:"auto"}});
-  const table=el("table",{style:{width:"100%",borderCollapse:"collapse",fontSize:13}});
-  table.appendChild(el("thead",{},el("tr",{style:{borderBottom:"1px solid #222"}},
-    ...["#","Customer","Restaurant","Total","Status","Date"].map(h=>
-      el("th",{style:{padding:"10px 12px",textAlign:"left",color:"#555",fontWeight:700,whiteSpace:"nowrap"}},h)
-    )
-  )));
-  const tbody=el("tbody");
-  for(const o of orders.slice(0,15)){
-    tbody.appendChild(el("tr",{style:{borderBottom:"1px solid #1a1a1a"}},
-      el("td",{style:{padding:"10px 12px",color:"#555"}},"#"+o.id),
-      el("td",{style:{padding:"10px 12px",fontWeight:700}},o.customer_name||""),
-      el("td",{style:{padding:"10px 12px",color:"#aaa"}},(o.restaurant_name||"").substring(0,18)),
-      el("td",{style:{padding:"10px 12px",fontWeight:900,color:"#FF4D00"}},"₹"+o.total),
-      el("td",{style:{padding:"10px 12px"}},badge(o.status||"Pending",STATUS_C[o.status]||"#888")),
-      el("td",{style:{padding:"10px 12px",color:"#555"}},new Date(o.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short"}))
-    ));
-  }
-  table.appendChild(tbody);tbl.appendChild(table);div.appendChild(tbl);
-  main.appendChild(div);
+function dashTab(c){
+  const {orders,customers,restaurants,riders}=S.data;
+  const revenue=orders.filter(o=>o.status==="Delivered").reduce((a,o)=>a+(o.total||0),0);
+  const pending=orders.filter(o=>["Pending","Preparing"].includes(o.status)).length;
+  const today=orders.filter(o=>new Date(o.created_at).toDateString()===new Date().toDateString()).length;
+  c.appendChild(div({cls:"fade"},
+    div({style:{fontSize:13,color:"#64748B",fontWeight:500,marginBottom:4}},new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})),
+    div({style:{fontSize:22,fontWeight:800,color:"#1E3A8A",marginBottom:20}}),"Good day, Faizan! 👋",
+    div({style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:12,marginBottom:28}},
+      statCard("📦","Total Orders",orders.length,"#2563EB","#EEF2FF"),
+      statCard("💰","Revenue","₹"+revenue.toLocaleString(),"#16A34A","#DCFCE7"),
+      statCard("👥","Customers",customers.length,"#7C3AED","#EDE9FE"),
+      statCard("🏪","Restaurants",restaurants.length,"#D97706","#FEF3C7"),
+      statCard("⏳","Pending",pending,"#DC2626","#FEE2E2"),
+      statCard("📅","Today",today,"#0891B2","#CFFAFE")
+    ),
+    div({style:{fontSize:16,fontWeight:700,color:"#1E3A8A",marginBottom:14}}),"🕐 Recent Orders",
+    orders.length===0?card({padding:30,textAlign:"center"},div({style:{fontSize:40,marginBottom:8}}),"📦",div({style:{fontSize:14,color:"#94A3B8"}}),"No orders yet"):null,
+    ...orders.slice(0,6).map(o=>card({padding:16,marginBottom:10,display:"flex",justifyContent:"space-between",alignItems:"center"},
+      div({},
+        div({style:{fontWeight:700,fontSize:13,color:"#1a1a2e"}},o.customer_name||"Customer"),
+        div({style:{fontSize:12,color:"#64748B",marginTop:3}},o.restaurant_name+" • ₹"+o.total),
+        div({style:{fontSize:11,color:"#94A3B8",marginTop:2}},new Date(o.created_at).toLocaleString("en-IN",{dateStyle:"short",timeStyle:"short"}))
+      ),
+      badge(o.status,o.status==="Delivered"?"#16A34A":o.status==="On the Way"?"#7C3AED":o.status==="Preparing"?"#D97706":o.status==="Cancelled"?"#DC2626":"#2563EB")
+    ))
+  ));
 }
 
 // RESTAURANTS
-function restaurantsTab(main){
-  const div=el("div",{cls:"fade"});
-  div.appendChild(el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:10}},
-    el("div",{style:{fontSize:22,fontWeight:900}},"🏪 Restaurants ("+S.restaurants.length+")"),
-    btn("+ Add Restaurant",()=>ss({modal:{type:"addRestaurant",data:{name:"",cuisine:"",rating:"4.0",delivery_time:"25-35 mins",price_range:"₹200-400",image:"🍛",tag:"New",category:"Biryani",has_veg:true,has_nonveg:true,is_halal:false,active:true}}}),"#FF4D00",{borderRadius:12})
-  ));
-  div.appendChild(el("div",{style:{marginBottom:16}},inp("Search restaurants...",S.search,v=>ss({search:v}))));
-  const filtered=S.restaurants.filter(r=>!S.search||(r.name||"").toLowerCase().includes(S.search.toLowerCase()));
-  for(const r of filtered){
-    div.appendChild(card({marginBottom:12,display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"},
-      el("div",{style:{fontSize:38,width:54,height:54,backgroundColor:"#252525",borderRadius:12,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}},r.image||"🍽️"),
-      el("div",{style:{flex:1,minWidth:120}},
-        el("div",{style:{fontWeight:800,fontSize:15}},r.name),
-        el("div",{style:{fontSize:12,color:"#666",marginTop:2}},r.cuisine),
-        el("div",{style:{display:"flex",gap:6,marginTop:6,flexWrap:"wrap"}},
-          badge("⭐ "+r.rating,"#F59E0B"),
-          badge(r.delivery_time,"#3B82F6"),
-          r.is_halal?badge("✅ Halal","#22C55E"):null,
-          r.has_veg?badge("🥗 Veg","#22C55E"):null,
+function restTab(c){
+  const {restaurants}=S.data;
+  c.appendChild(div({cls:"fade"},
+    div({style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}},
+      div({style:{fontSize:20,fontWeight:800,color:"#1E3A8A"}}),"🏪 Restaurants",
+      btn("+ Add",()=>ss({modal:{type:"addRest",data:{name:"",cuisine:"",rating:4.0,delivery_time:"25-35 min",price_range:"₹₹",image:"🍛",tag:"",category:"",has_veg:true,has_nonveg:true,is_halal:false,active:true}}}),"primary",{padding:"10px 18px",borderRadius:12})
+    ),
+    restaurants.length===0?card({padding:40,textAlign:"center"},div({style:{fontSize:48,marginBottom:10}}),"🏪",div({style:{fontSize:14,color:"#94A3B8"}}),"No restaurants yet"):null,
+    ...restaurants.map(r=>card({padding:18,marginBottom:12},
+      div({style:{display:"flex",gap:14,alignItems:"flex-start",marginBottom:14}},
+        div({style:{fontSize:38,width:58,height:58,background:"#F0F4FF",borderRadius:14,display:"flex",alignItems:"center",justifyContent:"center",flexShrink:0}}),r.image||"🍛",
+        div({style:{flex:1}},
+          div({style:{fontWeight:700,fontSize:15,color:"#1a1a2e"}},r.name),
+          div({style:{fontSize:12,color:"#64748B",marginTop:3}},r.cuisine),
+          div({style:{fontSize:12,color:"#94A3B8",marginTop:2}}),"⭐ "+r.rating+" • "+r.delivery_time+" • "+r.price_range
+        ),
+        div({style:{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}},
+          toggle(r.active,async()=>{await db.from("restaurants").update({active:!r.active}).eq("id",r.id);loadAll();}),
+          span({style:{fontSize:10,fontWeight:600,color:r.active?"#16A34A":"#94A3B8"}}),r.active?"Live":"Off"
         )
       ),
-      el("div",{style:{display:"flex",gap:8,alignItems:"center",flexShrink:0,flexWrap:"wrap"}},
-        el("div",{style:{display:"flex",alignItems:"center",gap:6}},
-          toggle(r.active,async()=>{await db.from("restaurants").update({active:!r.active}).eq("id",r.id);loadAll();}),
-          el("span",{style:{fontSize:12,color:r.active?"#22C55E":"#555",fontWeight:700}},r.active?"Live":"Off")
-        ),
-        btn("✏️ Edit",()=>ss({modal:{type:"editRestaurant",data:{...r}}}),"#252525",{padding:"8px 14px",border:"1px solid #333",borderRadius:8,fontSize:13}),
-        btn("🍽️ Menu",()=>{loadMenu(r.id);ss({modal:{type:"menu",data:r}});},"#3B82F620",{padding:"8px 14px",border:"1px solid #3B82F6",borderRadius:8,color:"#3B82F6",fontSize:13}),
-        btn("🗑️",async()=>{if(confirm("Delete "+r.name+"?")){await db.from("restaurants").delete().eq("id",r.id);loadAll();}},"#EF444418",{padding:"8px 12px",border:"1px solid #EF4444",borderRadius:8,color:"#EF4444",fontSize:13})
+      div({style:{display:"flex",gap:6,flexWrap:"wrap",marginBottom:12}},
+        r.has_veg?badge("🥦 Veg","#16A34A"):null,
+        r.has_nonveg?badge("🍗 Non-Veg","#DC2626"):null,
+        r.is_halal?badge("☪️ Halal","#0891B2"):null
+      ),
+      div({style:{display:"flex",gap:8}},
+        btn("📋 Menu",()=>ss({modal:{type:"menu",restaurantId:r.id,restaurantName:r.name}}),"ghost",{flex:1,fontSize:12,padding:"9px"}),
+        btn("✏️ Edit",()=>ss({modal:{type:"addRest",editId:r.id,data:{...r}}}),"white",{flex:1,fontSize:12,padding:"9px"}),
+        btn("🗑️",async()=>{if(confirm("Delete "+r.name+"?")){await db.from("restaurants").delete().eq("id",r.id);loadAll();}},"danger",{fontSize:12,padding:"9px 14px"})
       )
-    ));
-  }
-  if(!filtered.length)div.appendChild(el("div",{style:{textAlign:"center",padding:"50px 20px",color:"#444"}},"No restaurants found"));
-  main.appendChild(div);
+    ))
+  ));
 }
 
 // ORDERS
-function ordersTab(main){
-  const div=el("div",{cls:"fade"});
-  div.appendChild(el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16,flexWrap:"wrap",gap:10}},
-    el("div",{style:{fontSize:22,fontWeight:900}},"📋 Orders ("+S.orders.length+")"),
-    el("div",{style:{fontSize:13,color:"#555"}},S.orders.filter(o=>o.status==="Pending").length+" pending")
-  ));
-  // Status filters
-  const filterRow=el("div",{style:{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}});
-  for(const s of["All","Pending","Preparing","On the Way","Delivered","Cancelled"]){
-    const active=(!S.orderFilter&&s==="All")||S.orderFilter===s;
-    filterRow.appendChild(el("div",{
-      style:{padding:"6px 14px",borderRadius:20,fontSize:12,fontWeight:700,cursor:"pointer",
-        backgroundColor:active?"#FF4D00":"#1a1a1a",color:active?"#fff":"#666",border:"1px solid "+(active?"#FF4D00":"#333")},
-      onClick:()=>ss({orderFilter:s==="All"?"":s})},s
-    ));
-  }
-  div.appendChild(filterRow);
-  const filtered=S.orders.filter(o=>!S.orderFilter||o.status===S.orderFilter);
-  for(const o of filtered){
-    div.appendChild(card({marginBottom:10},
-      el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:10}},
-        el("div",{style:{flex:1}},
-          el("div",{style:{display:"flex",gap:8,alignItems:"center",flexWrap:"wrap",marginBottom:8}},
-            el("div",{style:{fontWeight:900,fontSize:15}},"Order #"+o.id),
-            badge(o.status||"Pending",STATUS_C[o.status]||"#888"),
-            o.payment_method?badge(o.payment_method==="COD"?"💵 COD":"💳 Online","#8B5CF6"):null
-          ),
-          el("div",{style:{fontSize:13,color:"#aaa",marginBottom:3}},"👤 "+(o.customer_name||"")+" • 📱 "+(o.customer_phone||"")),
-          el("div",{style:{fontSize:13,color:"#666",marginBottom:3}},"🏪 "+(o.restaurant_name||"")),
-          el("div",{style:{fontSize:12,color:"#555",marginBottom:3}},"🛒 "+(o.items||"").substring(0,80)+"..."),
-          el("div",{style:{fontSize:12,color:"#444"}},"📍 "+(o.customer_address||""))
+function ordTab(c){
+  const {orders}=S.data;
+  const filters=["","Pending","Preparing","On the Way","Delivered","Cancelled"];
+  const filtered=S.orderFilter?orders.filter(o=>o.status===S.orderFilter):orders;
+  c.appendChild(div({cls:"fade"},
+    div({style:{fontSize:20,fontWeight:800,color:"#1E3A8A",marginBottom:16}}),"📋 Orders",
+    div({style:{display:"flex",gap:8,overflowX:"auto",marginBottom:20,paddingBottom:4}},
+      ...filters.map(f=>btn(f||"All",()=>ss({orderFilter:f}),S.orderFilter===f?"primary":"ghost",{fontSize:11,padding:"7px 14px",whiteSpace:"nowrap",borderRadius:20}))
+    ),
+    filtered.length===0?card({padding:40,textAlign:"center"},div({style:{fontSize:48,marginBottom:10}}),"📋",div({style:{fontSize:14,color:"#94A3B8"}}),"No orders"):null,
+    ...filtered.map(o=>card({padding:18,marginBottom:12},
+      div({style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}},
+        div({},
+          div({style:{fontWeight:700,fontSize:14,color:"#1a1a2e"}},o.customer_name||"Customer"),
+          div({style:{fontSize:12,color:"#64748B",marginTop:2}},o.restaurant_name),
+          div({style:{fontSize:13,fontWeight:700,color:"#2563EB",marginTop:2}}),"₹"+o.total
         ),
-        el("div",{style:{textAlign:"right",flexShrink:0,minWidth:120}},
-          el("div",{style:{fontSize:22,fontWeight:900,color:"#FF4D00"}},"₹"+o.total),
-          el("div",{style:{fontSize:11,color:"#555",marginTop:3}},new Date(o.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"})),
-          el("div",{style:{marginTop:10}},
-            sel(["Pending","Preparing","On the Way","Delivered","Cancelled"],o.status||"Pending",async v=>{
-              await db.from("orders").update({status:v}).eq("id",o.id);loadAll();
-            },{width:"auto",padding:"7px 10px",fontSize:12,backgroundColor:"#252525"})
-          )
-        )
-      )
-    ));
-  }
-  if(!filtered.length)div.appendChild(el("div",{style:{textAlign:"center",padding:50,color:"#444"}},"No orders"));
-  main.appendChild(div);
+        badge(o.status,o.status==="Delivered"?"#16A34A":o.status==="On the Way"?"#7C3AED":o.status==="Preparing"?"#D97706":o.status==="Cancelled"?"#DC2626":"#2563EB")
+      ),
+      div({style:{background:"#F8FAFF",borderRadius:10,padding:12,marginBottom:12,fontSize:12,color:"#475569",lineHeight:1.8}},
+        "📍 "+(o.customer_address||"No address"),h("br"),
+        "📱 "+(o.customer_phone||"No phone"),h("br"),
+        "🛒 "+(o.items||"")
+      ),
+      div({style:{fontSize:11,color:"#94A3B8",marginBottom:10}},new Date(o.created_at).toLocaleString("en-IN",{dateStyle:"medium",timeStyle:"short"})),
+      sel([["Pending","⏳ Pending"],["Preparing","👨‍🍳 Preparing"],["On the Way","🏍️ On the Way"],["Delivered","✅ Delivered"],["Cancelled","❌ Cancelled"]],o.status,async v=>{await db.from("orders").update({status:v}).eq("id",o.id);loadAll();},{fontSize:13,padding:"10px 12px",borderRadius:10,background:"#F8FAFF",border:"2px solid #E8EEFF",color:"#1a1a2e"})
+    ))
+  ));
 }
 
 // CUSTOMERS
-function customersTab(main){
-  const div=el("div",{cls:"fade"});
-  div.appendChild(el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}},
-    el("div",{style:{fontSize:22,fontWeight:900}},"👥 Customers ("+S.customers.length+")"),
-    el("div",{style:{fontSize:13,color:"#555"}},S.customers.reduce((s,c)=>s+(c.total_spent||0),0).toLocaleString()+" ₹ total spent")
-  ));
-  div.appendChild(el("div",{style:{marginBottom:16}},inp("Search by name or email...",S.search,v=>ss({search:v}))));
-  const filtered=S.customers.filter(c=>!S.search||(c.name||"").toLowerCase().includes(S.search.toLowerCase())||(c.email||"").toLowerCase().includes(S.search.toLowerCase()));
-  for(const c of filtered){
-    div.appendChild(card({marginBottom:10,display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"},
-      el("div",{style:{width:46,height:46,borderRadius:"50%",backgroundColor:"#FF4D0020",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}},c.profile_emoji||"😊"),
-      el("div",{style:{flex:1}},
-        el("div",{style:{fontWeight:800,fontSize:15}},c.name||"Unknown"),
-        el("div",{style:{fontSize:12,color:"#666",marginTop:2}},c.email||""),
-        el("div",{style:{fontSize:12,color:"#555",marginTop:1}},"📱 "+(c.phone||"Not added"))
-      ),
-      el("div",{style:{textAlign:"right"}},
-        el("div",{style:{fontSize:18,fontWeight:900,color:"#FF4D00"}},"₹"+(c.total_spent||0).toLocaleString()),
-        el("div",{style:{fontSize:12,color:"#555",marginTop:2}},(c.total_orders||0)+" orders"),
-        el("div",{style:{fontSize:11,color:"#333",marginTop:2}},new Date(c.created_at).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"2-digit"}))
+function custTab(c){
+  const {customers}=S.data;
+  c.appendChild(div({cls:"fade"},
+    div({style:{fontSize:20,fontWeight:800,color:"#1E3A8A",marginBottom:20}}),"👥 Customers ("+customers.length+")",
+    customers.length===0?card({padding:40,textAlign:"center"},div({style:{fontSize:48,marginBottom:10}}),"👥",div({style:{fontSize:14,color:"#94A3B8"}}),"No customers yet"):null,
+    ...customers.map(cu=>card({padding:18,marginBottom:10,display:"flex",alignItems:"center",gap:14},
+      div({style:{width:48,height:48,borderRadius:"50%",background:"linear-gradient(135deg,#EEF2FF,#DBEAFE)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}),cu.profile_emoji||"👤",
+      div({style:{flex:1}},
+        div({style:{fontWeight:700,fontSize:14,color:"#1a1a2e"}},cu.name||"Unknown"),
+        div({style:{fontSize:12,color:"#64748B",marginTop:2}},cu.phone||cu.email||"No contact"),
+        div({style:{fontSize:12,marginTop:4}},badge((cu.total_orders||0)+" orders","#2563EB"),span({style:{marginLeft:6}}),badge("₹"+(cu.total_spent||0).toLocaleString()+" spent","#16A34A"))
       )
-    ));
-  }
-  if(!filtered.length)div.appendChild(el("div",{style:{textAlign:"center",padding:50,color:"#444"}},"No customers found"));
-  main.appendChild(div);
+    ))
+  ));
 }
 
 // OWNERS
-function ownersTab(main){
-  const div=el("div",{cls:"fade"});
-  div.appendChild(el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20,flexWrap:"wrap",gap:10}},
-    el("div",{style:{fontSize:22,fontWeight:900}},"👨‍💼 Restaurant Owners"),
-    btn("+ Add Owner",()=>ss({modal:{type:"addOwner",data:{name:"",email:"",phone:"",password:"",restaurant_id:""}}}),"#FF4D00",{borderRadius:12})
-  ));
-  if(!S.owners.length){
-    div.appendChild(el("div",{style:{textAlign:"center",padding:60,color:"#444"}},
-      el("div",{style:{fontSize:48,marginBottom:12}},"👨‍💼"),
-      el("div",{style:{fontSize:16,fontWeight:700,marginBottom:6,color:"#555"}},"No owners yet"),
-      el("div",{style:{fontSize:13}},"Add restaurant owners so they can manage orders & menu")
-    ));
-  } else {
-    for(const o of S.owners){
-      const rest=S.restaurants.find(r=>r.id===o.restaurant_id);
-      div.appendChild(card({marginBottom:10,display:"flex",alignItems:"center",gap:14,flexWrap:"wrap"},
-        el("div",{style:{width:46,height:46,borderRadius:"50%",backgroundColor:"#3B82F620",display:"flex",alignItems:"center",justifyContent:"center",fontSize:24,flexShrink:0}},"👨‍💼"),
-        el("div",{style:{flex:1}},
-          el("div",{style:{fontWeight:800,fontSize:15}},o.name),
-          el("div",{style:{fontSize:12,color:"#666",marginTop:2}},o.email),
-          el("div",{style:{fontSize:12,color:"#555",marginTop:1}},"📱 "+(o.phone||"N/A")),
-          rest?el("div",{style:{fontSize:12,color:"#FF4D00",marginTop:4,fontWeight:700}},"🏪 "+rest.name):el("span",{},"No restaurant assigned")
+function ownTab(c){
+  const {owners,restaurants}=S.data;
+  c.appendChild(div({cls:"fade"},
+    div({style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}},
+      div({style:{fontSize:20,fontWeight:800,color:"#1E3A8A"}}),"👨‍💼 Owners ("+owners.length+")",
+      btn("+ Add",()=>ss({modal:{type:"addOwner",data:{name:"",email:"",phone:"",password:"",restaurant_id:""}}}),"primary",{padding:"10px 18px",borderRadius:12})
+    ),
+    owners.length===0?card({padding:40,textAlign:"center"},div({style:{fontSize:48,marginBottom:10}}),"👨‍💼",div({style:{fontSize:14,color:"#94A3B8"}}),"No owners yet"):null,
+    ...owners.map(o=>{
+      const rest=restaurants.find(r=>r.id===o.restaurant_id);
+      return card({padding:18,marginBottom:10,display:"flex",alignItems:"center",gap:14},
+        div({style:{width:48,height:48,borderRadius:"50%",background:"#EDE9FE",display:"flex",alignItems:"center",justifyContent:"center",fontSize:22,flexShrink:0}}),"👨‍💼",
+        div({style:{flex:1}},
+          div({style:{fontWeight:700,fontSize:14,color:"#1a1a2e"}},o.name),
+          div({style:{fontSize:12,color:"#64748B",marginTop:2}},o.email),
+          div({style:{fontSize:12,color:"#2563EB",fontWeight:600,marginTop:3}},rest?"🏪 "+rest.name:"No restaurant assigned")
         ),
-        btn("🗑️ Remove",async()=>{if(confirm("Remove "+o.name+"?")){await db.from("restaurant_owners").delete().eq("id",o.id);loadAll();}},"#EF444418",{padding:"8px 14px",border:"1px solid #EF4444",borderRadius:8,color:"#EF4444",fontSize:13})
-      ));
-    }
-  }
-  main.appendChild(div);
+        btn("🗑️",async()=>{if(confirm("Remove "+o.name+"?")){await db.from("restaurant_owners").delete().eq("id",o.id);loadAll();}},"danger",{padding:"9px 12px",fontSize:13})
+      );
+    })
+  ));
 }
 
-// MODALS
-function modalOverlay(){
-  const {type,data}=S.modal;
-  const overlay=el("div",{style:{position:"fixed",inset:0,backgroundColor:"rgba(0,0,0,0.85)",zIndex:200,display:"flex",alignItems:"center",justifyContent:"center",padding:16},
-    onClick:e=>{if(e.target===overlay)ss({modal:null});}
-  });
-  const box=el("div",{style:{backgroundColor:"#1a1a1a",borderRadius:16,padding:24,width:"100%",maxWidth:500,maxHeight:"92vh",overflowY:"auto",border:"1px solid #2a2a2a"}});
+// RIDERS
+function riderTab(c){
+  const {riders,orders}=S.data;
+  c.appendChild(div({cls:"fade"},
+    div({style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}},
+      div({style:{fontSize:20,fontWeight:800,color:"#1E3A8A"}}),"🏍️ Riders ("+riders.length+")",
+      btn("+ Add Rider",()=>ss({modal:{type:"addRider",data:{name:"",phone:"",password:"",area:"",vehicle:"Bike",emoji:"🏍️"}}}),"primary",{padding:"10px 18px",borderRadius:12})
+    ),
+    riders.length===0?card({padding:40,textAlign:"center"},
+      div({style:{fontSize:52,marginBottom:12}}),"🏍️",
+      div({style:{fontSize:16,fontWeight:700,color:"#475569",marginBottom:6}}),"No riders yet",
+      div({style:{fontSize:13,color:"#94A3B8",marginBottom:20}}),"Add delivery riders so they can log in and accept orders",
+      btn("+ Add First Rider",()=>ss({modal:{type:"addRider",data:{name:"",phone:"",password:"",area:"",vehicle:"Bike",emoji:"🏍️"}}}),"primary")
+    ):null,
+    ...riders.map(r=>{
+      const total=orders.filter(o=>o.rider_name===r.name&&o.status==="Delivered").length;
+      const today=orders.filter(o=>o.rider_name===r.name&&o.status==="Delivered"&&new Date(o.created_at).toDateString()===new Date().toDateString()).length;
+      return card({padding:20,marginBottom:14},
+        div({style:{display:"flex",gap:14,alignItems:"center",marginBottom:16}},
+          div({style:{width:56,height:56,borderRadius:16,background:"linear-gradient(135deg,#EEF2FF,#DBEAFE)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:30,flexShrink:0}}),r.emoji||"🏍️",
+          div({style:{flex:1}},
+            div({style:{fontWeight:800,fontSize:16,color:"#1a1a2e"}},r.name),
+            div({style:{fontSize:12,color:"#64748B",marginTop:3}},r.phone),
+            div({style:{fontSize:12,color:"#94A3B8",marginTop:2}},"📍 "+(r.area||"No area")+" · "+r.vehicle)
+          ),
+          div({style:{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:6}},
+            toggle(r.active,async()=>{await db.from("delivery_riders").update({active:!r.active}).eq("id",r.id);loadAll();}),
+            span({style:{fontSize:10,fontWeight:700,color:r.active?"#16A34A":"#94A3B8"}}),r.active?"Online":"Offline"
+          )
+        ),
+        div({style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:14}},
+          div({style:{background:"#F0F4FF",borderRadius:12,padding:"12px 8px",textAlign:"center"}},div({style:{fontSize:22,fontWeight:800,color:"#2563EB"}}),today,div({style:{fontSize:10,color:"#94A3B8",marginTop:2}}),"Today"),
+          div({style:{background:"#DCFCE7",borderRadius:12,padding:"12px 8px",textAlign:"center"}},div({style:{fontSize:22,fontWeight:800,color:"#16A34A"}}),total,div({style:{fontSize:10,color:"#94A3B8",marginTop:2}}),"Total"),
+          div({style:{background:"#FEF3C7",borderRadius:12,padding:"12px 8px",textAlign:"center"}},div({style:{fontSize:22,fontWeight:800,color:"#D97706"}}),"₹"+(total*30),div({style:{fontSize:10,color:"#94A3B8",marginTop:2}}),"Earned")
+        ),
+        btn("🗑️ Remove Rider",async()=>{if(confirm("Remove "+r.name+"?")){await db.from("delivery_riders").delete().eq("id",r.id);loadAll();}},"danger",{width:"100%",padding:11,fontSize:13})
+      );
+    })
+  ));
+}
 
-  if(type==="addRestaurant"||type==="editRestaurant"){
-    const d={...data};
-    const isEdit=type==="editRestaurant";
-    box.appendChild(el("div",{style:{fontSize:18,fontWeight:900,marginBottom:20,color:"#FF4D00"}},isEdit?"✏️ Edit Restaurant":"+ Add Restaurant"));
-    box.appendChild(field("Restaurant Name",inp("e.g. Al Baik",d.name,v=>d.name=v)));
-    box.appendChild(field("Cuisine",inp("e.g. Biryani, Pizza",d.cuisine,v=>d.cuisine=v)));
-    box.appendChild(row(
-      el("div",{style:{flex:1}},field("Rating",inp("e.g. 4.2",d.rating,v=>d.rating=v))),
-      el("div",{style:{flex:1}},field("Delivery Time",inp("e.g. 25-35 mins",d.delivery_time,v=>d.delivery_time=v)))
-    ));
-    box.appendChild(row(
-      el("div",{style:{flex:1}},field("Price Range",inp("e.g. ₹200-400",d.price_range,v=>d.price_range=v))),
-      el("div",{style:{flex:1}},field("Tag",inp("e.g. New, Popular",d.tag,v=>d.tag=v)))
-    ));
-    box.appendChild(field("Category",sel(CATS,d.category,v=>d.category=v)));
-    box.appendChild(el("div",{style:{marginBottom:14}},
-      label("RESTAURANT EMOJI"),
-      el("div",{style:{display:"flex",flexWrap:"wrap",gap:6,marginTop:4}},
-        ...EMOJIS.map(e=>el("div",{
-          style:{fontSize:28,cursor:"pointer",padding:6,borderRadius:8,backgroundColor:d.image===e?"#FF4D0030":"#252525",border:d.image===e?"1px solid #FF4D00":"1px solid transparent",transition:"all .15s"},
-          onClick:()=>{d.image=e;ss({modal:{type,data:{...d}}});}},e
-        ))
-      )
-    ));
-    for(const[key,lbl]of[["has_veg","🥗 Has Veg Items"],["has_nonveg","🍖 Has Non-Veg Items"],["is_halal","✅ Halal Certified"],["active","🟢 Active (visible to customers)"]]){
-      box.appendChild(el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid #252525"}},
-        el("span",{style:{fontSize:14,color:"#aaa"}},lbl),
-        toggle(d[key],()=>{d[key]=!d[key];ss({modal:{type,data:{...d}}});})
-      ));
-    }
-    box.appendChild(el("div",{style:{display:"flex",gap:10,marginTop:20}},
-      btn("Cancel",()=>ss({modal:null}),"#252525",{flex:1,border:"1px solid #333",color:"#888"}),
-      btn(isEdit?"💾 Save Changes":"✅ Add Restaurant",async()=>{
-        if(!d.name||!d.cuisine){alert("Name and cuisine are required!");return;}
-        const payload={name:d.name,cuisine:d.cuisine,rating:parseFloat(d.rating)||4.0,delivery_time:d.delivery_time||"30-40 mins",price_range:d.price_range||"₹200-400",image:d.image||"🍽️",tag:d.tag||"",category:d.category,has_veg:!!d.has_veg,has_nonveg:!!d.has_nonveg,is_halal:!!d.is_halal,active:!!d.active};
-        if(isEdit)await db.from("restaurants").update(payload).eq("id",d.id);
-        else await db.from("restaurants").insert([payload]);
+// MODAL
+function modalOverlay(){
+  const {type,data,editId,restaurantId,restaurantName}=S.modal;
+  const overlay=div({style:{position:"fixed",inset:0,background:"rgba(15,23,42,.6)",display:"flex",alignItems:"flex-end",justifyContent:"center",zIndex:400,backdropFilter:"blur(4px)"}});
+  overlay.addEventListener("click",e=>{if(e.target===overlay)ss({modal:null});});
+  const box=div({style:{background:"#fff",borderRadius:"24px 24px 0 0",padding:"28px 22px 34px",width:"100%",maxWidth:500,maxHeight:"92vh",overflowY:"auto"}});
+  const d={...data};
+
+  // Drag handle
+  box.appendChild(div({style:{width:40,height:4,borderRadius:2,background:"#E2E8F0",margin:"0 auto 24px"}}));
+
+  if(type==="addRest"){
+    box.appendChild(div({style:{fontSize:18,fontWeight:800,color:"#1E3A8A",marginBottom:22}},editId?"✏️ Edit Restaurant":"🏪 New Restaurant"));
+    box.appendChild(field("RESTAURANT NAME",inp("e.g. Spice Garden",d.name,v=>d.name=v)));
+    box.appendChild(field("CUISINE TYPE",inp("e.g. North Indian, Chinese",d.cuisine,v=>d.cuisine=v)));
+    box.appendChild(field("EMOJI",inp("🍛 🍕 🍔 🍜",d.image,v=>d.image=v)));
+    box.appendChild(field("TAG LINE",inp("e.g. Best biryani in town",d.tag,v=>d.tag=v)));
+    box.appendChild(field("CATEGORY",sel([["","Select"],["biryani","Biryani"],["pizza","Pizza"],["burgers","Burgers"],["chinese","Chinese"],["south","South Indian"],["north","North Indian"],["desserts","Desserts"],["cafe","Cafe"]],d.category,v=>d.category=v)));
+    box.appendChild(field("DELIVERY TIME",inp("25-35 min",d.delivery_time,v=>d.delivery_time=v)));
+    box.appendChild(field("PRICE RANGE",sel([["₹","₹ Budget"],["₹₹","₹₹ Mid"],["₹₹₹","₹₹₹ Premium"]],d.price_range,v=>d.price_range=v)));
+    box.appendChild(field("RATING",inp("4.5",d.rating,v=>d.rating=parseFloat(v)||4.0,"number")));
+    const tr=(lbl,key)=>div({style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 0",borderBottom:"1px solid #EEF2FF"}},span({style:{fontSize:14,fontWeight:500,color:"#475569"}},lbl),toggle(d[key],v=>{d[key]=v;ss({modal:{...S.modal,data:{...d}}});}));
+    box.appendChild(tr("Veg Options 🥦","has_veg"));box.appendChild(tr("Non-Veg 🍗","has_nonveg"));box.appendChild(tr("Halal ☪️","is_halal"));box.appendChild(tr("Active / Live","active"));
+    box.appendChild(div({style:{display:"flex",gap:12,marginTop:24}},
+      btn("Cancel",()=>ss({modal:null}),"ghost",{flex:1,padding:13}),
+      btn(editId?"Save Changes":"Add Restaurant",async()=>{
+        if(!d.name){alert("Name required!");return;}
+        if(editId)await db.from("restaurants").update({...d}).eq("id",editId);
+        else await db.from("restaurants").insert([{...d}]);
         ss({modal:null});loadAll();
-      },"#FF4D00",{flex:2})
+      },"primary",{flex:2,padding:13})
     ));
   }
 
   else if(type==="menu"){
-    const rest=data;
-    const items=S.menuItems[rest.id]||[];
-    box.appendChild(el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20}},
-      el("div",{style:{fontSize:17,fontWeight:900,color:"#FF4D00"}},"🍽️ "+rest.name),
-      btn("+ Add Item",()=>ss({modal:{type:"addMenuItem",data:{restaurant_id:rest.id,name:"",description:"",price:"",veg:true,bestseller:false},_rest:rest}}),"#FF4D00",{padding:"8px 14px",borderRadius:8,fontSize:13})
-    ));
-    if(!items.length){
-      box.appendChild(el("div",{style:{textAlign:"center",padding:40,color:"#555"}},"No menu items yet. Add some! 👆"));
-    }
-    for(const item of items){
-      box.appendChild(el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid #252525",gap:10}},
-        el("div",{style:{flex:1}},
-          el("div",{style:{display:"flex",gap:6,marginBottom:4,alignItems:"center"}},
-            el("div",{style:{width:12,height:12,borderRadius:2,border:"2px solid "+(item.veg?"#22C55E":"#FF4D00"),display:"flex",alignItems:"center",justifyContent:"center"}},
-              el("div",{style:{width:6,height:6,borderRadius:"50%",backgroundColor:item.veg?"#22C55E":"#FF4D00"}})
-            ),
-            item.bestseller?badge("🔥 Best","#F59E0B"):null
-          ),
-          el("div",{style:{fontWeight:700,fontSize:14}},item.name),
-          item.description?el("div",{style:{fontSize:12,color:"#555",marginTop:2}},item.description):null,
-          el("div",{style:{fontSize:16,fontWeight:900,color:"#FF4D00",marginTop:4}},"₹"+item.price)
-        ),
-        btn("🗑️",async()=>{
-          await db.from("menu_items").delete().eq("id",item.id);
-          await loadMenu(rest.id);
-          ss({modal:{type:"menu",data:rest}});
-        },"#EF444418",{padding:"7px 10px",border:"1px solid #EF4444",borderRadius:8,color:"#EF4444",fontSize:12})
-      ));
-    }
-  }
-
-  else if(type==="addMenuItem"){
-    const d={...data};
-    const rest=S.modal._rest;
-    box.appendChild(el("div",{style:{fontSize:18,fontWeight:900,marginBottom:20,color:"#FF4D00"}},"+ Add Menu Item"));
-    box.appendChild(field("Item Name",inp("e.g. Chicken Biryani",d.name,v=>d.name=v)));
-    box.appendChild(field("Description (optional)",inp("e.g. Spicy, aromatic...",d.description,v=>d.description=v)));
-    box.appendChild(field("Price (₹)",inp("e.g. 180",d.price,v=>d.price=v,"number")));
-    for(const[key,lbl]of[["veg","🥗 Vegetarian Item"],["bestseller","🔥 Mark as Bestseller"]]){
-      box.appendChild(el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 0",borderBottom:"1px solid #252525"}},
-        el("span",{style:{fontSize:14,color:"#aaa"}},lbl),
-        toggle(d[key],()=>{d[key]=!d[key];ss({modal:{type,data:{...d},_rest:rest}});})
-      ));
-    }
-    box.appendChild(el("div",{style:{display:"flex",gap:10,marginTop:20}},
-      btn("← Back",()=>ss({modal:{type:"menu",data:rest}}),"#252525",{flex:1,border:"1px solid #333",color:"#888"}),
+    box.appendChild(div({style:{fontSize:18,fontWeight:800,color:"#1E3A8A",marginBottom:4}},"📋 "+restaurantName));
+    const itemsDiv=div({style:{marginBottom:20}});
+    const renderItems=async()=>{
+      const {data:items}=await db.from("menu_items").select("*").eq("restaurant_id",restaurantId).order("created_at",{ascending:false});
+      itemsDiv.innerHTML="";
+      if(!items||!items.length){itemsDiv.appendChild(div({style:{textAlign:"center",padding:"24px",color:"#94A3B8",fontSize:13}}),"No items yet");}
+      (items||[]).forEach(item=>{
+        itemsDiv.appendChild(div({style:{display:"flex",alignItems:"center",gap:12,padding:"12px 0",borderBottom:"1px solid #F0F4FF"}},
+          div({style:{flex:1}},div({style:{fontWeight:600,fontSize:13,color:"#1a1a2e"}},item.name),div({style:{fontSize:12,color:"#64748B",marginTop:2}},"₹"+item.price+" • "+(item.veg?"🥦":"🍗")+(item.bestseller?" ⭐":""))),
+          btn("🗑️",async()=>{await db.from("menu_items").delete().eq("id",item.id);renderItems();},"danger",{padding:"7px 11px",fontSize:12})
+        ));
+      });
+    };
+    renderItems();
+    box.appendChild(itemsDiv);
+    const nd={name:"",price:"",veg:true};
+    box.appendChild(div({style:{background:"#F8FAFF",borderRadius:14,padding:16,border:"2px solid #E8EEFF"}},
+      div({style:{fontSize:13,fontWeight:700,color:"#2563EB",marginBottom:12}}),"+ Add New Item",
+      field("ITEM NAME",inp("e.g. Chicken Biryani",nd.name,v=>nd.name=v)),
+      field("PRICE (₹)",inp("199",nd.price,v=>nd.price=v,"number")),
+      div({style:{display:"flex",gap:8,marginBottom:14}},btn("🥦 Veg",()=>{nd.veg=true;},"success",{flex:1,fontSize:12}),btn("🍗 Non-Veg",()=>{nd.veg=false;},"danger",{flex:1,fontSize:12})),
       btn("✅ Add Item",async()=>{
-        if(!d.name||!d.price){alert("Name and price are required!");return;}
-        await db.from("menu_items").insert([{restaurant_id:d.restaurant_id,name:d.name,description:d.description||"",price:parseFloat(d.price),veg:!!d.veg,bestseller:!!d.bestseller}]);
-        await loadMenu(rest.id);
-        ss({modal:{type:"menu",data:rest}});
-      },"#FF4D00",{flex:2})
+        if(!nd.name||!nd.price){alert("Name and price required!");return;}
+        await db.from("menu_items").insert([{restaurant_id:restaurantId,name:nd.name,price:parseFloat(nd.price),veg:nd.veg}]);
+        nd.name="";nd.price="";renderItems();
+      },"primary",{width:"100%"})
     ));
+    box.appendChild(btn("Close",()=>ss({modal:null}),"ghost",{width:"100%",marginTop:14,padding:13}));
   }
 
   else if(type==="addOwner"){
-    const d={...data};
-    box.appendChild(el("div",{style:{fontSize:18,fontWeight:900,marginBottom:20,color:"#FF4D00"}},"+ Add Restaurant Owner"));
-    box.appendChild(field("Full Name",inp("Owner name",d.name,v=>d.name=v)));
-    box.appendChild(field("Email",inp("owner@email.com",d.email,v=>d.email=v,"email")));
-    box.appendChild(field("Phone",inp("Phone number",d.phone,v=>d.phone=v,"tel")));
-    box.appendChild(field("Password (they'll use this to login)",inp("Set a password",d.password,v=>d.password=v,"password")));
-    box.appendChild(field("Assign Restaurant",
-      sel(["-- Select Restaurant --",...S.restaurants.map(r=>r.name)],
-        S.restaurants.find(r=>r.id===d.restaurant_id)?.name||"-- Select Restaurant --",
-        v=>{const r=S.restaurants.find(r=>r.name===v);d.restaurant_id=r?.id||"";}
-      )
-    ));
-    box.appendChild(el("div",{style:{display:"flex",gap:10,marginTop:20}},
-      btn("Cancel",()=>ss({modal:null}),"#252525",{flex:1,border:"1px solid #333",color:"#888"}),
-      btn("✅ Create Owner Account",async()=>{
+    box.appendChild(div({style:{fontSize:18,fontWeight:800,color:"#1E3A8A",marginBottom:22}}),"👨‍💼 New Restaurant Owner");
+    box.appendChild(field("FULL NAME",inp("Owner full name",d.name,v=>d.name=v)));
+    box.appendChild(field("EMAIL",inp("email@example.com",d.email,v=>d.email=v,"email")));
+    box.appendChild(field("PHONE",inp("Phone number",d.phone,v=>d.phone=v,"tel")));
+    box.appendChild(field("PASSWORD",inp("Set login password",d.password,v=>d.password=v,"password")));
+    box.appendChild(field("ASSIGN RESTAURANT",sel([["","Select restaurant"],...S.data.restaurants.map(r=>[r.id,r.name])],d.restaurant_id,v=>d.restaurant_id=v)));
+    box.appendChild(div({style:{display:"flex",gap:12,marginTop:24}},
+      btn("Cancel",()=>ss({modal:null}),"ghost",{flex:1,padding:13}),
+      btn("Add Owner",async()=>{
         if(!d.name||!d.email||!d.password){alert("Name, email and password required!");return;}
         const {error}=await db.from("restaurant_owners").insert([{name:d.name,email:d.email,phone:d.phone,password:d.password,restaurant_id:d.restaurant_id||null}]);
         if(error){alert("Error: "+error.message);return;}
         ss({modal:null});loadAll();
-      },"#FF4D00",{flex:2})
+      },"primary",{flex:2,padding:13})
+    ));
+  }
+
+  else if(type==="addRider"){
+    box.appendChild(div({style:{fontSize:18,fontWeight:800,color:"#1E3A8A",marginBottom:6}}),"🏍️ Add Delivery Rider");
+    box.appendChild(div({style:{fontSize:13,color:"#64748B",marginBottom:22}}),"Rider logs in using phone & password on the Delivery app");
+    box.appendChild(field("FULL NAME",inp("Rider full name",d.name,v=>d.name=v)));
+    box.appendChild(field("PHONE NUMBER",inp("10-digit mobile number",d.phone,v=>d.phone=v,"tel")));
+    box.appendChild(field("LOGIN PASSWORD",inp("Set a secure password",d.password,v=>d.password=v,"password")));
+    box.appendChild(field("DELIVERY AREA",inp("e.g. Coimbatore North, RS Puram",d.area,v=>d.area=v)));
+    box.appendChild(field("VEHICLE TYPE",sel([["Bike","🏍️ Bike"],["Scooter","🛵 Scooter"],["Bicycle","🚴 Bicycle"],["Car","🚗 Car"],["Auto","🛺 Auto"]],d.vehicle,v=>d.vehicle=v)));
+    box.appendChild(div({style:{marginBottom:20}},
+      div({style:{fontSize:11,fontWeight:700,color:"#94A3B8",letterSpacing:1,marginBottom:10}}),"RIDER EMOJI",
+      div({style:{display:"flex",gap:10,flexWrap:"wrap"}},
+        ...["🏍️","🛵","🚴","🚗","🛺","⚡"].map(e=>div({style:{width:50,height:50,borderRadius:12,background:d.emoji===e?"#DBEAFE":"#F8FAFF",border:d.emoji===e?"2px solid #2563EB":"2px solid #E8EEFF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:26,cursor:"pointer",transition:"all .2s"},onClick:()=>{d.emoji=e;ss({modal:{type,data:{...d}}});}},e))
+      )
+    ));
+    box.appendChild(div({style:{display:"flex",gap:12,marginTop:8}},
+      btn("Cancel",()=>ss({modal:null}),"ghost",{flex:1,padding:13}),
+      btn("✅ Add Rider",async()=>{
+        if(!d.name||!d.phone||!d.password){alert("Name, phone and password are required!");return;}
+        const {error}=await db.from("delivery_riders").insert([{name:d.name,phone:d.phone,password:d.password,area:d.area||"",vehicle:d.vehicle||"Bike",emoji:d.emoji||"🏍️",active:true}]);
+        if(error){alert("Error: "+error.message);return;}
+        ss({modal:null});loadAll();
+      },"primary",{flex:2,padding:13})
     ));
   }
 
