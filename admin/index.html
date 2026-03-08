@@ -28,6 +28,14 @@ button,input,select{font-family:'Poppins',sans-serif;}
 var URL_BASE = "https://njxjqkebbloltsedecuh.supabase.co/rest/v1/";
 var KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qeGpxa2ViYmxvbHRzZWRlY3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDY0NzAsImV4cCI6MjA4ODM4MjQ3MH0.SurEvT-3Kd5rHNMdfmrRd8ZltpCHTs3NoBrV-5PtHw4";
 var HDR = {"apikey": KEY, "Authorization": "Bearer " + KEY, "Content-Type": "application/json", "Accept-Profile": "public", "Content-Profile": "public"};
+function rpc(fn, params) {
+  return fetch("https://njxjqkebbloltsedecuh.supabase.co/rest/v1/rpc/" + fn, {
+    method:"POST",
+    headers:{"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"},
+    body:JSON.stringify(params)
+  }).then(function(r){return r.json();});
+}
+
 
 function dbGet(table, params) {
   return fetch(URL_BASE + table + "?" + params, {headers: HDR}).then(function(r){ return r.json(); });
@@ -295,19 +303,28 @@ function addMenuItem(rid) {
   var n = document.getElementById("iname").value.trim();
   var p = document.getElementById("iprice").value;
   if (!n || !p) { alert("Name and price required!"); return; }
-  dbPost("menu_items", {restaurant_id: rid, name: n, price: parseFloat(p), veg: window._iv !== false, bestseller: false}).then(function(){ loadMenuItems(rid); document.getElementById("iname").value=""; document.getElementById("iprice").value=""; });
+  rpc("add_menu_item",{p_restaurant_id:rid,p_name:n,p_price:parseFloat(p),p_veg:window._iv!==false}).then(function(r){
+    if(r&&r.success===false){alert("Error: "+r.error);return;}
+    loadMenuItems(rid);document.getElementById("iname").value="";document.getElementById("iprice").value="";
+  }).catch(function(e){alert("Failed: "+e.message);});
 }
 
 function submitRest() {
   var n = document.getElementById("rn").value.trim();
   if (!n) { alert("Restaurant name required!"); return; }
-  dbPost("restaurants", {name:n, cuisine:document.getElementById("rc").value, image:document.getElementById("re").value||"🍛", delivery_time:document.getElementById("rt").value||"25-35 min", rating:4.0, has_veg:document.getElementById("rv").checked, has_nonveg:document.getElementById("rnv").checked, is_halal:document.getElementById("rh").checked, active:true}).then(function(){ closeModal(); loadAll(); });
+  rpc("add_restaurant",{p_name:n,p_cuisine:document.getElementById("rc").value||"",p_image:document.getElementById("re").value||"🍛",p_delivery_time:document.getElementById("rt").value||"25-35 min",p_rating:4.0,p_has_veg:document.getElementById("rv").checked,p_has_nonveg:document.getElementById("rnv").checked,p_is_halal:document.getElementById("rh").checked}).then(function(r){
+    if(r&&r.success===false){alert("Error: "+r.error);return;}
+    closeModal();loadAll();
+  }).catch(function(e){alert("Failed: "+e.message);});
 }
 
 function submitOwner() {
   var n=document.getElementById("on").value.trim(), e=document.getElementById("oe").value.trim(), p=document.getElementById("opw").value;
   if (!n||!e||!p) { alert("Name, email and password required!"); return; }
-  dbPost("restaurant_owners", {name:n, email:e, phone:document.getElementById("op").value, password:p, restaurant_id:document.getElementById("or").value||null}).then(function(r){ if(r&&r.code){alert("Error: "+r.message);return;} closeModal(); loadAll(); });
+  rpc("add_owner",{p_name:n,p_email:e,p_phone:document.getElementById("op").value||"",p_password:p,p_restaurant_id:document.getElementById("or").value||""}).then(function(r){
+    if(r&&r.success===false){alert("Error: "+r.error);return;}
+    closeModal();loadAll();
+  }).catch(function(e){alert("Failed: "+e.message);});
 }
 
 function pickEmoji(el, emoji) {
@@ -319,17 +336,52 @@ function pickEmoji(el, emoji) {
 function submitRider() {
   var n=document.getElementById("rdn").value.trim(), ph=document.getElementById("rdph").value.trim(), pw=document.getElementById("rdpw").value;
   if (!n||!ph||!pw) { alert("Name, phone and password required!"); return; }
-  var body = {name:n, phone:ph, password:pw, area:document.getElementById("rda").value||"", vehicle:document.getElementById("rdv").value||"Bike", emoji:window._rdEmoji||"🏍️", active:true};
-  fetch(URL_BASE + "delivery_riders", {
+  var area=document.getElementById("rda").value||"";
+  var vehicle=document.getElementById("rdv").value||"Bike";
+  var emoji=window._rdEmoji||"🏍️";
+  // Call RPC function that bypasses schema cache
+  fetch("https://njxjqkebbloltsedecuh.supabase.co/rest/v1/rpc/add_rider", {
     method:"POST",
-    headers: {"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json","Prefer":"return=representation","Accept-Profile":"public","Content-Profile":"public"},
-    body: JSON.stringify(body)
-  }).then(function(r){return r.json();}).then(function(r){
-    if(r&&r.code){alert("DB Error: "+r.message);return;}
-    if(r&&r.message){alert("Error: "+r.message);return;}
-    closeModal(); loadAll();
-  }).catch(function(e){alert("Network error: "+e.message);});
+    headers:{"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({p_name:n,p_phone:ph,p_password:pw,p_area:area,p_vehicle:vehicle,p_emoji:emoji})
+  }).then(function(r){return r.json();}).then(function(result){
+    if(result && result.success){closeModal();loadAll();return;}
+    alert("Could not add rider: "+(result.error||JSON.stringify(result)));
+  }).catch(function(e){alert("Error: "+e.message);});
 }
+function submitRider_old_unused() {
+  var n="",ph="",pw="",area="",vehicle="",emoji="";
+  // Use Supabase SQL RPC to bypass schema cache
+  var sql = "INSERT INTO public.delivery_riders (name,phone,password,area,vehicle,emoji,active) VALUES ('"+n.replace(/'/g,"''")+"','"+ph.replace(/'/g,"''")+"','"+pw.replace(/'/g,"''")+"','"+area.replace(/'/g,"''")+"','"+vehicle+"','"+emoji+"',true)";
+  fetch("https://njxjqkebbloltsedecuh.supabase.co/rest/v1/rpc/exec_sql", {
+    method:"POST",
+    headers:{"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"},
+    body:JSON.stringify({query:sql})
+  }).then(function(r){
+    // Try direct insert regardless of RPC result
+    return fetch("https://njxjqkebbloltsedecuh.supabase.co/rest/v1/delivery_riders", {
+      method:"POST",
+      headers:{"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json","Prefer":"return=minimal"},
+      body:JSON.stringify({name:n,phone:ph,password:pw,area:area,vehicle:vehicle,emoji:emoji,active:true})
+    });
+  }).then(function(r){
+    if(r.ok||r.status===201){closeModal();loadAll();return;}
+    return r.text().then(function(t){
+      // If schema cache error, try with pg_catalog workaround  
+      if(t.indexOf("schema cache")>-1){
+        return fetch("https://njxjqkebbloltsedecuh.supabase.co/rest/v1/delivery_riders", {
+          method:"POST",
+          headers:{"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json","Prefer":"return=minimal","Accept-Profile":"public","Content-Profile":"public","X-Client-Info":"supabase-js/2.0.0"},
+          body:JSON.stringify({name:n,phone:ph,password:pw,area:area,vehicle:vehicle,emoji:emoji,active:true})
+        }).then(function(r2){
+          if(r2.ok||r2.status===201){closeModal();loadAll();}
+          else{r2.text().then(function(t2){alert("Error: "+t2);});}
+        });
+      }
+      alert("Error: "+t);
+    });
+  }).catch(function(e){alert("Failed: "+e.message);});
+} // end submitRider_old_unused
 
 init();
 </script>
