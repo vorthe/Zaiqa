@@ -130,6 +130,9 @@ function AuthScreen({onAuth}){
         if(ex)onAuth(ex);
       }
     }).catch(()=>{});
+    // Request permissions on load
+    if("Notification" in window && Notification.permission==="default") Notification.requestPermission();
+    if(navigator.geolocation) navigator.geolocation.getCurrentPosition(()=>{},()=>{},{timeout:5000});
     const saved=localStorage.getItem("zaiqaUser");
     if(saved){try{onAuth(JSON.parse(saved));}catch(e){}}
   },[]);
@@ -432,6 +435,16 @@ function App(){
   ];
 
   useEffect(()=>{
+    // Request permissions
+    if("Notification" in window && Notification.permission==="default"){
+      Notification.requestPermission();
+    }
+    if(navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(()=>{},()=>{});
+    }
+    // Request permissions on load
+    if("Notification" in window && Notification.permission==="default") Notification.requestPermission();
+    if(navigator.geolocation) navigator.geolocation.getCurrentPosition(()=>{},()=>{},{timeout:5000});
     const saved=localStorage.getItem("zaiqaUser");
     if(saved){
       try{
@@ -739,6 +752,15 @@ function App(){
   // TRACKING
   if(screen==="tracking"){
     const steps=[{icon:"✅",label:"Order Placed",desc:"We received your order!"},{icon:"👨‍🍳",label:"Preparing",desc:"Chef is cooking"},{icon:"🛵",label:"On the Way",desc:"Rider heading to you"},{icon:"🏠",label:"Delivered",desc:"Enjoy your meal!"}];
+    const [riderPos,setRiderPos]=React.useState(null);
+    React.useEffect(()=>{
+      if(trackingStep!==2||!orderPlaced)return;
+      const poll=async()=>{
+        const {data}=await db.from("orders").select("rider_lat,rider_lng,rider_name,rider_phone").eq("id",orderPlaced.id).limit(1);
+        if(data&&data[0]&&data[0].rider_lat) setRiderPos(data[0]);
+      };
+      poll();const iv=setInterval(poll,10000);return()=>clearInterval(iv);
+    },[trackingStep,orderPlaced]);
     return(
       <div style={S.app}>
         <div style={{...S.topBar,display:"flex",alignItems:"center",gap:14}}>
@@ -756,6 +778,28 @@ function App(){
                   {trackingStep<4?"🟢 Live Tracking Active":"✅ Order Delivered — Enjoy!"}
                 </div>
               </div>
+              {trackingStep===2&&React.createElement("div",{style:{...S.card,padding:0,marginBottom:16,overflow:"hidden"}},
+                React.createElement("div",{style:{padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #f0f0f0"}},
+                  React.createElement("div",{},
+                    React.createElement("div",{style:{fontSize:13,fontWeight:800,color:"#8B5CF6"}},"🏍️ Rider is on the way!"),
+                    React.createElement("div",{style:{fontSize:12,color:"#aaa",marginTop:2}},riderPos?.rider_name||"Your rider is coming")
+                  ),
+                  riderPos?.rider_phone&&React.createElement("button",{
+                    style:{backgroundColor:"#e8f5e9",border:"1px solid #22C55E",borderRadius:10,padding:"8px 14px",color:"#22C55E",fontWeight:700,fontSize:12,cursor:"pointer"},
+                    onClick:()=>window.open("tel:"+riderPos.rider_phone)
+                  },"📞 Call")
+                ),
+                riderPos?.rider_lat?React.createElement("iframe",{
+                  src:"https://maps.google.com/maps?q="+riderPos.rider_lat+","+riderPos.rider_lng+"&z=15&output=embed",
+                  style:{width:"100%",height:200,border:"none",display:"block"},
+                  loading:"lazy"
+                }):React.createElement("div",{style:{padding:"20px",textAlign:"center",color:"#aaa",fontSize:13}},"📍 Loading rider location...")
+              )}
+              {trackingStep===3&&React.createElement("div",{style:{...S.card,padding:18,marginBottom:16,textAlign:"center",border:"1px solid #22C55E40"}},
+                React.createElement("div",{style:{fontSize:36,marginBottom:6}},"🎉"),
+                React.createElement("div",{style:{fontSize:16,fontWeight:900,color:"#22C55E"}},"Order Delivered!"),
+                React.createElement("div",{style:{fontSize:13,color:"#888",marginTop:4}},"Enjoy your meal! 😋")
+              )}
               <div style={{...S.card,padding:22}}>
                 {steps.map((step,i)=>(
                   <div key={i} style={{display:"flex",gap:16,alignItems:"flex-start",marginBottom:i<steps.length-1?22:0}}>
