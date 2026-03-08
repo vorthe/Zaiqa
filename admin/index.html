@@ -27,7 +27,7 @@ button,input,select{font-family:'Poppins',sans-serif;}
 <script>
 var URL_BASE = "https://njxjqkebbloltsedecuh.supabase.co/rest/v1/";
 var KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qeGpxa2ViYmxvbHRzZWRlY3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDY0NzAsImV4cCI6MjA4ODM4MjQ3MH0.SurEvT-3Kd5rHNMdfmrRd8ZltpCHTs3NoBrV-5PtHw4";
-var HDR = {"apikey": KEY, "Authorization": "Bearer " + KEY, "Content-Type": "application/json"};
+var HDR = {"apikey": KEY, "Authorization": "Bearer " + KEY, "Content-Type": "application/json", "Accept-Profile": "public", "Content-Profile": "public"};
 
 function dbGet(table, params) {
   return fetch(URL_BASE + table + "?" + params, {headers: HDR}).then(function(r){ return r.json(); });
@@ -319,7 +319,16 @@ function pickEmoji(el, emoji) {
 function submitRider() {
   var n=document.getElementById("rdn").value.trim(), ph=document.getElementById("rdph").value.trim(), pw=document.getElementById("rdpw").value;
   if (!n||!ph||!pw) { alert("Name, phone and password required!"); return; }
-  dbPost("delivery_riders", {name:n, phone:ph, password:pw, area:document.getElementById("rda").value, vehicle:document.getElementById("rdv").value, emoji:window._rdEmoji||"🏍️", active:true}).then(function(r){ if(r&&r.code){alert("Error: "+r.message);return;} closeModal(); loadAll(); });
+  var body = {name:n, phone:ph, password:pw, area:document.getElementById("rda").value||"", vehicle:document.getElementById("rdv").value||"Bike", emoji:window._rdEmoji||"🏍️", active:true};
+  fetch(URL_BASE + "delivery_riders", {
+    method:"POST",
+    headers: {"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json","Prefer":"return=representation","Accept-Profile":"public","Content-Profile":"public"},
+    body: JSON.stringify(body)
+  }).then(function(r){return r.json();}).then(function(r){
+    if(r&&r.code){alert("DB Error: "+r.message);return;}
+    if(r&&r.message){alert("Error: "+r.message);return;}
+    closeModal(); loadAll();
+  }).catch(function(e){alert("Network error: "+e.message);});
 }
 
 init();
