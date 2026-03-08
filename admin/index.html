@@ -35,6 +35,24 @@ function rpc(fn, params) {
     body:JSON.stringify(params)
   }).then(function(r){return r.json();});
 }
+function sqlInsert(table, body) {
+  // Direct REST insert - works after schema is loaded
+  return fetch("https://njxjqkebbloltsedecuh.supabase.co/rest/v1/"+table, {
+    method:"POST",
+    headers:{
+      "apikey":KEY,
+      "Authorization":"Bearer "+KEY,
+      "Content-Type":"application/json",
+      "Prefer":"return=minimal",
+      "Accept-Profile":"public",
+      "Content-Profile":"public"
+    },
+    body:JSON.stringify(body)
+  }).then(function(r){
+    if(r.ok||r.status===201||r.status===204)return {success:true};
+    return r.text().then(function(t){return {error:t};});
+  });
+}
 
 
 function dbGet(table, params) {
@@ -303,8 +321,8 @@ function addMenuItem(rid) {
   var n = document.getElementById("iname").value.trim();
   var p = document.getElementById("iprice").value;
   if (!n || !p) { alert("Name and price required!"); return; }
-  rpc("add_menu_item",{p_restaurant_id:rid,p_name:n,p_price:parseFloat(p),p_veg:window._iv!==false}).then(function(r){
-    if(r&&r.success===false){alert("Error: "+r.error);return;}
+  sqlInsert("menu_items",{restaurant_id:rid,name:n,price:parseFloat(p),veg:window._iv!==false,bestseller:false}).then(function(r){
+    if(r&&r.error){alert("Error: "+r.error);return;}
     loadMenuItems(rid);document.getElementById("iname").value="";document.getElementById("iprice").value="";
   }).catch(function(e){alert("Failed: "+e.message);});
 }
@@ -312,8 +330,8 @@ function addMenuItem(rid) {
 function submitRest() {
   var n = document.getElementById("rn").value.trim();
   if (!n) { alert("Restaurant name required!"); return; }
-  rpc("add_restaurant",{p_name:n,p_cuisine:document.getElementById("rc").value||"",p_image:document.getElementById("re").value||"🍛",p_delivery_time:document.getElementById("rt").value||"25-35 min",p_rating:4.0,p_has_veg:document.getElementById("rv").checked,p_has_nonveg:document.getElementById("rnv").checked,p_is_halal:document.getElementById("rh").checked}).then(function(r){
-    if(r&&r.success===false){alert("Error: "+r.error);return;}
+  sqlInsert("restaurants",{name:n,cuisine:document.getElementById("rc").value||"",image:document.getElementById("re").value||"🍛",delivery_time:document.getElementById("rt").value||"25-35 min",rating:4.0,has_veg:document.getElementById("rv").checked,has_nonveg:document.getElementById("rnv").checked,is_halal:document.getElementById("rh").checked,active:true,price_range:"₹₹",tag:"NEW"}).then(function(r){
+    if(r && r.error){alert("Error: "+r.error);return;}
     closeModal();loadAll();
   }).catch(function(e){alert("Failed: "+e.message);});
 }
@@ -321,8 +339,9 @@ function submitRest() {
 function submitOwner() {
   var n=document.getElementById("on").value.trim(), e=document.getElementById("oe").value.trim(), p=document.getElementById("opw").value;
   if (!n||!e||!p) { alert("Name, email and password required!"); return; }
-  rpc("add_owner",{p_name:n,p_email:e,p_phone:document.getElementById("op").value||"",p_password:p,p_restaurant_id:document.getElementById("or").value||""}).then(function(r){
-    if(r&&r.success===false){alert("Error: "+r.error);return;}
+  var rid=document.getElementById("or").value||null;
+  sqlInsert("restaurant_owners",{name:n,email:e,phone:document.getElementById("op").value||"",password:p,restaurant_id:rid||null}).then(function(r){
+    if(r&&r.error){alert("Error: "+r.error);return;}
     closeModal();loadAll();
   }).catch(function(e){alert("Failed: "+e.message);});
 }
@@ -336,18 +355,10 @@ function pickEmoji(el, emoji) {
 function submitRider() {
   var n=document.getElementById("rdn").value.trim(), ph=document.getElementById("rdph").value.trim(), pw=document.getElementById("rdpw").value;
   if (!n||!ph||!pw) { alert("Name, phone and password required!"); return; }
-  var area=document.getElementById("rda").value||"";
-  var vehicle=document.getElementById("rdv").value||"Bike";
-  var emoji=window._rdEmoji||"🏍️";
-  // Call RPC function that bypasses schema cache
-  fetch("https://njxjqkebbloltsedecuh.supabase.co/rest/v1/rpc/add_rider", {
-    method:"POST",
-    headers:{"apikey":KEY,"Authorization":"Bearer "+KEY,"Content-Type":"application/json"},
-    body:JSON.stringify({p_name:n,p_phone:ph,p_password:pw,p_area:area,p_vehicle:vehicle,p_emoji:emoji})
-  }).then(function(r){return r.json();}).then(function(result){
-    if(result && result.success){closeModal();loadAll();return;}
-    alert("Could not add rider: "+(result.error||JSON.stringify(result)));
-  }).catch(function(e){alert("Error: "+e.message);});
+  sqlInsert("delivery_riders",{name:n,phone:ph,password:pw,area:document.getElementById("rda").value||"",vehicle:document.getElementById("rdv").value||"Bike",emoji:window._rdEmoji||"🏍️",active:true}).then(function(r){
+    if(r && r.error){alert("Error: "+r.error);return;}
+    closeModal();loadAll();
+  }).catch(function(e){alert("Failed: "+e.message);});
 }
 function submitRider_old_unused() {
   var n="",ph="",pw="",area="",vehicle="",emoji="";
