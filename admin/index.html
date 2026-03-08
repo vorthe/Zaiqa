@@ -4,535 +4,325 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <title>Zaiqa Admin</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet"/>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Poppins',sans-serif;background:#F0F4FF;color:#1a1a2e;}
 button,input,select{font-family:'Poppins',sans-serif;}
-.card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 2px 16px rgba(37,99,235,.07);border:1px solid #EEF2FF;margin-bottom:12px;}
-.btn-primary{background:linear-gradient(135deg,#2563EB,#1D4ED8);color:#fff;border:none;padding:12px 20px;border-radius:12px;font-weight:600;font-size:14px;cursor:pointer;width:100%;}
-.btn-ghost{background:#fff;color:#2563EB;border:1px solid #DBEAFE;padding:10px 16px;border-radius:10px;font-weight:600;font-size:13px;cursor:pointer;}
-.btn-danger{background:#FEE2E2;color:#DC2626;border:1px solid #FECACA;padding:8px 12px;border-radius:8px;font-weight:600;font-size:12px;cursor:pointer;}
-.inp{width:100%;padding:13px 16px;background:#F8FAFF;border:2px solid #E8EEFF;border-radius:12px;color:#1a1a2e;font-size:14px;outline:none;font-family:'Poppins',sans-serif;margin-bottom:14px;}
+.card{background:#fff;border-radius:16px;padding:18px;box-shadow:0 2px 12px rgba(37,99,235,.08);border:1px solid #EEF2FF;margin-bottom:12px;}
+.inp{width:100%;padding:12px 14px;background:#F8FAFF;border:2px solid #E8EEFF;border-radius:10px;font-size:14px;outline:none;display:block;box-sizing:border-box;margin-bottom:12px;}
 .inp:focus{border-color:#2563EB;}
-.badge{display:inline-block;padding:3px 12px;border-radius:20px;font-size:11px;font-weight:600;}
-.tab-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;font-size:10px;font-weight:600;padding:8px 4px;}
-.drawer{position:fixed;top:0;left:0;bottom:0;width:280px;background:#fff;z-index:300;box-shadow:4px 0 30px rgba(0,0,0,.15);display:flex;flex-direction:column;}
-.overlay{position:fixed;inset:0;background:rgba(15,23,42,.5);z-index:200;}
-.modal-box{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:24px 24px 0 0;padding:24px 20px 36px;max-height:90vh;overflow-y:auto;z-index:500;}
-.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:400;}
-select.inp{appearance:none;}
-@keyframes spin{to{transform:rotate(360deg);}}
-.spin{display:inline-block;animation:spin 1s linear infinite;}
+.pbtn{width:100%;background:linear-gradient(135deg,#2563EB,#1D4ED8);color:#fff;border:none;padding:13px;border-radius:11px;font-weight:700;font-size:14px;cursor:pointer;}
+.gbtn{background:#fff;color:#2563EB;border:1px solid #DBEAFE;padding:9px 14px;border-radius:9px;font-weight:600;font-size:13px;cursor:pointer;}
+.dbtn{background:#FEE2E2;color:#DC2626;border:1px solid #FECACA;padding:7px 11px;border-radius:8px;font-weight:600;font-size:12px;cursor:pointer;}
+.tabbar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid #EEF2FF;display:flex;padding:8px 0 16px;z-index:100;}
+.drawer{position:fixed;top:0;left:0;bottom:0;width:270px;background:#fff;z-index:300;box-shadow:4px 0 24px rgba(0,0,0,.15);}
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:200;}
+.mbox{position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:22px 22px 0 0;padding:22px 18px 34px;max-height:88vh;overflow-y:auto;z-index:500;}
+.mbg{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:400;}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script>
-var SURL="https://njxjqkebbloltsedecuh.supabase.co";
-var SKEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qeGpxa2ViYmxvbHRzZWRlY3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDY0NzAsImV4cCI6MjA4ODM4MjQ3MH0.SurEvT-3Kd5rHNMdfmrRd8ZltpCHTs3NoBrV-5PtHw4";
-var SBH={"Authorization":"Bearer "+SKEY,"Content-Type":"application/json","apikey":SKEY,"Accept":"application/json"};
-var SB={
-  from:function(table){
-    return {
-      select:function(cols){
-        var q=cols&&cols!=="*"?"select="+cols:"select=*";
-        var filters=[];
-        var obj={
-          eq:function(col,val){filters.push(col+"=eq."+encodeURIComponent(val));return obj;},
-          in:function(col,vals){filters.push(col+"=in.("+vals.map(function(v){return '"'+v+'"';}).join(",")+ ")");return obj;},
-          order:function(col,opts){filters.push("order="+col+"."+(opts&&opts.ascending===false?"desc":"asc"));return obj;},
-          limit:function(n){filters.push("limit="+n);return obj;},
-          then:function(resolve,reject){
-            var url=SURL+"/rest/v1/"+table+"?"+q+(filters.length?"&"+filters.join("&"):"");
-            return fetch(url,{headers:SBH}).then(function(r){return r.json();}).then(function(d){return resolve({data:Array.isArray(d)?d:[]});}).catch(reject||function(){});
-          }
-        };
-        return obj;
-      },
-      insert:function(rows){
-        return fetch(SURL+"/rest/v1/"+table,{method:"POST",headers:Object.assign({},SBH,{"Prefer":"return=representation"}),body:JSON.stringify(rows[0])}).then(function(r){return r.json();}).then(function(d){return {data:d,error:null};}).catch(function(e){return {data:null,error:e};});
-      },
-      update:function(data){
-        var filters=[];
-        var obj={
-          eq:function(col,val){filters.push(col+"=eq."+encodeURIComponent(val));return obj;},
-          then:function(resolve,reject){
-            var url=SURL+"/rest/v1/"+table+"?"+filters.join("&");
-            return fetch(url,{method:"PATCH",headers:SBH,body:JSON.stringify(data)}).then(function(r){return {data:null,error:null};}).then(resolve).catch(reject||function(){});
-          }
-        };
-        return obj;
-      },
-      delete:function(){
-        var filters=[];
-        var obj={
-          eq:function(col,val){filters.push(col+"=eq."+encodeURIComponent(val));return obj;},
-          then:function(resolve,reject){
-            var url=SURL+"/rest/v1/"+table+"?"+filters.join("&");
-            return fetch(url,{method:"DELETE",headers:SBH}).then(function(){return {data:null,error:null};}).then(resolve).catch(reject||function(){});
-          }
-        };
-        return obj;
-      }
-    };
-  }
-};
-const ADMIN = {email:"faizan@zaiqa.com", pass:"Zaiqa@2025"};
+var URL_BASE = "https://njxjqkebbloltsedecuh.supabase.co/rest/v1/";
+var KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5qeGpxa2ViYmxvbHRzZWRlY3VoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzI4MDY0NzAsImV4cCI6MjA4ODM4MjQ3MH0.SurEvT-3Kd5rHNMdfmrRd8ZltpCHTs3NoBrV-5PtHw4";
+var HDR = {"apikey": KEY, "Authorization": "Bearer " + KEY, "Content-Type": "application/json"};
 
-let state = {
-  page: "login", tab: "dashboard", drawer: false,
-  restaurants:[], orders:[], customers:[], owners:[], riders:[],
-  loading: false, modal: null,
-  loginForm: {email:"", pass:""}, loginErr: "",
-  orderFilter: ""
+function dbGet(table, params) {
+  return fetch(URL_BASE + table + "?" + params, {headers: HDR}).then(function(r){ return r.json(); });
+}
+function dbPatch(table, id, body) {
+  return fetch(URL_BASE + table + "?id=eq." + id, {method:"PATCH", headers: HDR, body: JSON.stringify(body)});
+}
+function dbPost(table, body) {
+  return fetch(URL_BASE + table, {method:"POST", headers: Object.assign({"Prefer":"return=representation"}, HDR), body: JSON.stringify(body)}).then(function(r){ return r.json(); });
+}
+function dbDelete(table, id) {
+  return fetch(URL_BASE + table + "?id=eq." + id, {method:"DELETE", headers: HDR});
+}
+
+var ADMIN_EMAIL = "faizan@zaiqa.com";
+var ADMIN_PASS = "Zaiqa@2025";
+var state = {
+  loggedIn: false, tab: "dashboard", drawer: false, modal: null,
+  restaurants: [], orders: [], customers: [], owners: [], riders: [],
+  filterStatus: ""
 };
 
-function set(obj) { Object.assign(state, obj); render(); }
+function show(html) { document.getElementById("app").innerHTML = html; }
 
-// ── helpers ──────────────────────────────
-function el(tag, attrs, ...children) {
-  const e = document.createElement(tag);
-  for (const [k, v] of Object.entries(attrs || {})) {
-    if (k === "style") Object.assign(e.style, v);
-    else if (k.startsWith("on")) e.addEventListener(k.slice(2).toLowerCase(), v);
-    else if (k === "class") e.className = v;
-    else e.setAttribute(k, v);
+function init() {
+  show('<div style="min-height:100vh;background:linear-gradient(160deg,#EEF2FF,#DBEAFE);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px"><div style="font-size:60px">🍽️</div><div style="font-size:22px;font-weight:800;color:#1E3A8A">Zaiqa Admin</div></div>');
+  setTimeout(showLogin, 800);
+}
+
+function showLogin(err) {
+  var e = err ? '<div style="background:#FEE2E2;color:#DC2626;padding:11px;border-radius:9px;font-size:13px;font-weight:600;margin-bottom:14px;text-align:center">' + err + '</div>' : '';
+  show('<div style="min-height:100vh;background:linear-gradient(160deg,#EEF2FF,#DBEAFE);display:flex;align-items:center;justify-content:center;padding:20px"><div style="width:100%;max-width:380px"><div style="text-align:center;margin-bottom:28px"><div style="font-size:60px;margin-bottom:10px">🍽️</div><div style="font-size:24px;font-weight:800;color:#1E3A8A">Admin Login</div></div><div class="card" style="padding:24px">' + e + '<div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:6px">EMAIL</div><input class="inp" id="em" type="email" placeholder="faizan@zaiqa.com"><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:6px">PASSWORD</div><input class="inp" id="pw" type="password" placeholder="Password" style="margin-bottom:18px"><button class="pbtn" onclick="tryLogin()">Sign In →</button></div></div></div>');
+}
+
+function tryLogin() {
+  var em = document.getElementById("em").value.trim();
+  var pw = document.getElementById("pw").value;
+  if (em === ADMIN_EMAIL && pw === ADMIN_PASS) {
+    state.loggedIn = true;
+    loadAll();
+  } else {
+    showLogin("Wrong email or password!");
   }
-  children.flat(Infinity).forEach(c => {
-    if (c == null || c === false) return;
-    e.appendChild(typeof c === "object" ? c : document.createTextNode(String(c)));
+}
+
+function loadAll() {
+  show('<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#F0F4FF"><div style="font-size:48px">⚙️</div><div style="font-size:16px;font-weight:600;color:#1E3A8A">Loading data...</div></div>');
+  Promise.all([
+    dbGet("restaurants", "select=*&order=created_at.desc"),
+    dbGet("orders", "select=*&order=created_at.desc"),
+    dbGet("customers", "select=*&order=created_at.desc"),
+    dbGet("restaurant_owners", "select=*&order=created_at.desc"),
+    dbGet("delivery_riders", "select=*&order=created_at.desc")
+  ]).then(function(results) {
+    state.restaurants = Array.isArray(results[0]) ? results[0] : [];
+    state.orders = Array.isArray(results[1]) ? results[1] : [];
+    state.customers = Array.isArray(results[2]) ? results[2] : [];
+    state.owners = Array.isArray(results[3]) ? results[3] : [];
+    state.riders = Array.isArray(results[4]) ? results[4] : [];
+    renderApp();
+  }).catch(function(err) {
+    show('<div style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;background:#F0F4FF"><div style="font-size:48px">❌</div><div style="font-size:16px;font-weight:700;color:#DC2626;text-align:center">Load failed:<br>' + err.message + '</div><button class="pbtn" style="width:200px;margin-top:10px" onclick="loadAll()">Retry</button></div>');
   });
-  return e;
 }
 
-function badge(text, color) {
-  return el("span", {class:"badge", style:{background:color+"20",color,border:`1px solid ${color}40`}}, text);
-}
-function statusColor(s) {
-  return {Delivered:"#16A34A","On the Way":"#7C3AED",Preparing:"#D97706",Cancelled:"#DC2626",Pending:"#2563EB"}[s]||"#64748B";
-}
-function tog(active, cb) {
-  const w = el("div",{style:{width:46,height:24,borderRadius:12,background:active?"#2563EB":"#CBD5E1",cursor:"pointer",position:"relative",transition:"background .2s",flexShrink:0}},
-    el("div",{style:{position:"absolute",top:3,left:active?25:3,width:18,height:18,borderRadius:"50%",background:"#fff",transition:"left .2s"}})
-  );
-  w.addEventListener("click",()=>cb(!active));
-  return w;
-}
-
-// ── data ─────────────────────────────────
-async function loadAll() {
-  set({loading:true});
-  try {
-    const [r,o,c,ow,ri] = await Promise.all([
-      SB.from("restaurants").select("*").order("created_at",{ascending:false}),
-      SB.from("orders").select("*").order("created_at",{ascending:false}),
-      SB.from("customers").select("*").order("created_at",{ascending:false}),
-      SB.from("restaurant_owners").select("*").order("created_at",{ascending:false}),
-      SB.from("delivery_riders").select("*").order("created_at",{ascending:false}),
-    ]);
-    set({loading:false, restaurants:r.data||[], orders:o.data||[], customers:c.data||[], owners:ow.data||[], riders:ri.data||[]});
-  } catch(e) { set({loading:false}); }
+function renderApp() {
+  var tabs = {dashboard:"📊 Dashboard", restaurants:"🏪 Restaurants", orders:"📋 Orders", customers:"👥 Customers", owners:"👨‍💼 Owners", riders:"🏍️ Riders"};
+  var html = '<div style="min-height:100vh;background:#F0F4FF;padding-bottom:30px">';
+  // topbar
+  html += '<div style="background:#fff;height:56px;display:flex;align-items:center;justify-content:space-between;padding:0 16px;box-shadow:0 2px 10px rgba(37,99,235,.08);position:sticky;top:0;z-index:50">';
+  html += '<button onclick="openDrawer()" style="width:38px;height:38px;border-radius:9px;background:#EEF2FF;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:8px"><div style="width:16px;height:2px;background:#2563EB;border-radius:2px"></div><div style="width:12px;height:2px;background:#2563EB;border-radius:2px"></div><div style="width:16px;height:2px;background:#2563EB;border-radius:2px"></div></button>';
+  html += '<div style="font-size:16px;font-weight:700;color:#1E3A8A">' + (tabs[state.tab] || "Dashboard") + '</div>';
+  html += '<button onclick="loadAll()" style="width:38px;height:38px;border-radius:9px;background:#EEF2FF;border:none;cursor:pointer;font-size:20px">🔄</button>';
+  html += '</div>';
+  html += '<div style="padding:16px">' + getTabContent() + '</div></div>';
+  document.getElementById("app").innerHTML = html;
+  if (state.drawer) renderDrawer();
+  if (state.modal) renderModal();
 }
 
-// ── render ────────────────────────────────
-function render() {
-  const app = document.getElementById("app");
-  app.innerHTML = "";
-  if (state.page === "login") { app.appendChild(loginPage()); return; }
-  app.appendChild(appPage());
-  if (state.drawer) app.appendChild(drawerMenu());
-  if (state.modal) app.appendChild(modalView());
+function openDrawer() { state.drawer = true; renderApp(); }
+function closeDrawer() { state.drawer = false; renderApp(); }
+
+function renderDrawer() {
+  var items = [["📊","Dashboard","dashboard"],["🏪","Restaurants","restaurants"],["📋","Orders","orders"],["👥","Customers","customers"],["👨‍💼","Owners","owners"],["🏍️","Riders","riders"]];
+  var html = '<div class="overlay" onclick="closeDrawer()"></div><div class="drawer"><div style="background:linear-gradient(135deg,#1E3A8A,#2563EB);padding:34px 20px 22px"><div style="font-size:40px;margin-bottom:8px">🍽️</div><div style="font-size:18px;font-weight:800;color:#fff">Zaiqa Admin</div></div><div style="padding:12px">';
+  items.forEach(function(item) {
+    var active = state.tab === item[2];
+    html += '<div onclick="setTab(\'' + item[2] + '\')" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;margin-bottom:3px;cursor:pointer;background:' + (active ? "#EEF2FF" : "transparent") + ';color:' + (active ? "#2563EB" : "#475569") + ';font-weight:' + (active ? "700" : "500") + ';font-size:14px"><span>' + item[0] + '</span>' + item[1] + '</div>';
+  });
+  html += '<div onclick="doLogout()" style="display:flex;align-items:center;gap:12px;padding:13px 14px;border-radius:12px;cursor:pointer;background:#FEF2F2;color:#DC2626;font-weight:600;font-size:14px;margin-top:8px"><span>🚪</span>Logout</div>';
+  html += '</div></div>';
+  document.getElementById("app").insertAdjacentHTML("beforeend", html);
 }
 
-// ── LOGIN ─────────────────────────────────
-function loginPage() {
-  const f = state.loginForm;
-  return el("div",{style:{minHeight:"100vh",background:"linear-gradient(160deg,#EEF2FF,#DBEAFE 50%,#EDE9FE)",display:"flex",alignItems:"center",justifyContent:"center",padding:"24px"}},
-    el("div",{style:{width:"100%",maxWidth:"380px"}},
-      el("div",{style:{textAlign:"center",marginBottom:"36px"}},
-        el("div",{style:{width:"70px",height:"70px",borderRadius:"18px",background:"linear-gradient(135deg,#2563EB,#1D4ED8)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"32px",margin:"0 auto 14px",boxShadow:"0 8px 24px rgba(37,99,235,.35)"}},"🍽️"),
-        el("div",{style:{fontSize:"26px",fontWeight:"800",color:"#1E3A8A",marginBottom:"6px"}},"Zaiqa Admin"),
-        el("div",{style:{fontSize:"13px",color:"#64748B"}},"Secure Dashboard Access")
-      ),
-      el("div",{class:"card",style:{padding:"28px"}},
-        state.loginErr ? el("div",{style:{background:"#FEE2E2",borderRadius:"10px",padding:"12px 16px",color:"#DC2626",fontSize:"13px",fontWeight:"600",marginBottom:"16px",textAlign:"center"}}, state.loginErr) : null,
-        el("div",{style:{fontSize:"11px",fontWeight:"700",color:"#94A3B8",letterSpacing:"1px",marginBottom:"6px"}},"EMAIL"),
-        el("input",{class:"inp",type:"email",placeholder:"admin@zaiqa.com",value:f.email,oninput:e=>f.email=e.target.value}),
-        el("div",{style:{fontSize:"11px",fontWeight:"700",color:"#94A3B8",letterSpacing:"1px",marginBottom:"6px"}},"PASSWORD"),
-        el("input",{class:"inp",type:"password",placeholder:"Your password",value:f.pass,oninput:e=>f.pass=e.target.value}),
-        el("button",{class:"btn-primary",style:{marginTop:"8px"},onclick:()=>{
-          if(f.email===ADMIN.email&&f.pass===ADMIN.pass){set({page:"app",loginErr:""});loadAll();}
-          else set({loginErr:"Invalid credentials!"});
-        }},"Sign In →")
-      )
-    )
-  );
+function setTab(t) { state.tab = t; state.drawer = false; renderApp(); }
+function doLogout() { state.loggedIn = false; state.drawer = false; showLogin(); }
+
+function getTabContent() {
+  if (state.tab === "dashboard") return dashContent();
+  if (state.tab === "restaurants") return restContent();
+  if (state.tab === "orders") return ordContent();
+  if (state.tab === "customers") return custContent();
+  if (state.tab === "owners") return ownContent();
+  if (state.tab === "riders") return riderContent();
+  return dashContent();
 }
 
-// ── APP PAGE ──────────────────────────────
-function appPage() {
-  const names = {dashboard:"Dashboard",restaurants:"Restaurants",orders:"Orders",customers:"Customers",owners:"Owners",riders:"Riders"};
-  return el("div",{style:{minHeight:"100vh",background:"#F0F4FF"}},
-    // topbar
-    el("div",{style:{background:"#fff",height:"58px",display:"flex",alignItems:"center",justifyContent:"space-between",padding:"0 18px",boxShadow:"0 2px 12px rgba(37,99,235,.08)",position:"sticky",top:"0",zIndex:"50"}},
-      el("div",{style:{width:"40px",height:"40px",borderRadius:"10px",background:"#EEF2FF",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",gap:"5px",cursor:"pointer"},onclick:()=>set({drawer:true})},
-        el("div",{style:{width:"18px",height:"2px",background:"#2563EB",borderRadius:"2px"}}),
-        el("div",{style:{width:"14px",height:"2px",background:"#2563EB",borderRadius:"2px"}}),
-        el("div",{style:{width:"18px",height:"2px",background:"#2563EB",borderRadius:"2px"}})
-      ),
-      el("div",{style:{fontSize:"17px",fontWeight:"700",color:"#1E3A8A"}}, names[state.tab]||"Dashboard"),
-      el("div",{style:{width:"40px",height:"40px",borderRadius:"10px",background:"#EEF2FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"18px",cursor:"pointer"},onclick:loadAll},"🔄")
-    ),
-    // content
-    el("div",{style:{padding:"18px 16px 40px"}},
-      state.loading ?
-        el("div",{style:{textAlign:"center",padding:"80px 20px"}},
-          el("div",{style:{fontSize:"36px",display:"block"},class:"spin"},"⚙️"),
-          el("div",{style:{marginTop:"12px",color:"#64748B",fontSize:"14px"}},"Loading data...")
-        ) :
-        tabContent()
-    )
-  );
+function dashContent() {
+  var rev = state.orders.filter(function(o){return o.status==="Delivered";}).reduce(function(a,o){return a+(o.total||0);},0);
+  var pending = state.orders.filter(function(o){return ["Pending","Preparing"].includes(o.status);}).length;
+  var today = state.orders.filter(function(o){return new Date(o.created_at).toDateString()===new Date().toDateString();}).length;
+  var html = '<div style="font-size:12px;color:#64748B;margin-bottom:14px">' + new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"}) + '</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px">';
+  var stats = [["📦","Orders",state.orders.length,"#2563EB"],["💰","Revenue","₹"+rev.toLocaleString(),"#16A34A"],["👥","Customers",state.customers.length,"#7C3AED"],["🏪","Restaurants",state.restaurants.length,"#D97706"],["⏳","Pending",pending,"#DC2626"],["📅","Today",today,"#0891B2"]];
+  stats.forEach(function(s) {
+    html += '<div class="card" style="display:flex;align-items:center;gap:10px;margin-bottom:0"><div style="font-size:26px">' + s[0] + '</div><div><div style="font-size:22px;font-weight:900;color:' + s[3] + '">' + s[2] + '</div><div style="font-size:11px;color:#94A3B8;margin-top:1px">' + s[1] + '</div></div></div>';
+  });
+  html += '</div><div style="font-size:15px;font-weight:700;color:#1E3A8A;margin-bottom:10px">Recent Orders</div>';
+  state.orders.slice(0,5).forEach(function(o) {
+    var sc = {Delivered:"#16A34A","On the Way":"#7C3AED",Preparing:"#D97706",Cancelled:"#DC2626",Pending:"#2563EB"}[o.status]||"#64748B";
+    html += '<div class="card" style="display:flex;justify-content:space-between;align-items:center"><div><div style="font-weight:700;font-size:13px">' + (o.customer_name||"Customer") + '</div><div style="font-size:12px;color:#64748B;margin-top:2px">' + (o.restaurant_name||"") + ' · ₹' + (o.total||0) + '</div></div><span style="background:' + sc + '20;color:' + sc + ';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">' + o.status + '</span></div>';
+  });
+  return html;
 }
 
-function tabContent() {
-  return {dashboard:dashTab,restaurants:restTab,orders:ordTab,customers:custTab,owners:ownTab,riders:riderTab}[state.tab]?.() || dashTab();
+function restContent() {
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:17px;font-weight:700;color:#1E3A8A">🏪 Restaurants</div><button class="gbtn" onclick="openModal(\'addRest\')">+ Add</button></div>';
+  if (!state.restaurants.length) html += '<div class="card" style="text-align:center;padding:40px"><div style="font-size:48px;margin-bottom:8px">🏪</div><div style="color:#94A3B8">No restaurants yet</div></div>';
+  state.restaurants.forEach(function(r) {
+    html += '<div class="card"><div style="display:flex;gap:10px;align-items:center;margin-bottom:10px"><div style="font-size:34px;background:#F0F4FF;width:50px;height:50px;border-radius:11px;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (r.image||"🍛") + '</div><div style="flex:1"><div style="font-weight:700;font-size:14px">' + r.name + '</div><div style="font-size:12px;color:#64748B;margin-top:2px">' + (r.cuisine||"") + ' · ⭐' + (r.rating||4) + ' · ' + (r.delivery_time||"") + '</div></div><div><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="tog-' + r.id + '" ' + (r.active?"checked":"") + ' onchange="toggleRest(\'' + r.id + '\',this.checked)" style="width:18px;height:18px;cursor:pointer"><span style="font-size:11px;font-weight:700;color:' + (r.active?"#16A34A":"#94A3B8") + '">' + (r.active?"Live":"Off") + '</span></label></div></div>';
+    html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px">';
+    if(r.has_veg) html += '<span style="background:#DCFCE7;color:#16A34A;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">🥦 Veg</span>';
+    if(r.has_nonveg) html += '<span style="background:#FEE2E2;color:#DC2626;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">🍗 Non-Veg</span>';
+    if(r.is_halal) html += '<span style="background:#DBEAFE;color:#2563EB;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">☪️ Halal</span>';
+    html += '</div><div style="display:flex;gap:8px"><button class="gbtn" style="flex:1;font-size:12px;padding:8px" onclick="openModal(\'menu\',\'' + r.id + '\',\'' + r.name.replace(/'/g,"") + '\')">📋 Menu</button><button class="dbtn" onclick="delRest(\'' + r.id + '\',\'' + r.name.replace(/'/g,"") + '\')">🗑️ Delete</button></div></div>';
+  });
+  return html;
 }
 
-// ── DRAWER ────────────────────────────────
-function drawerMenu() {
-  const items = [["📊","Dashboard","dashboard"],["🏪","Restaurants","restaurants"],["📋","Orders","orders"],["👥","Customers","customers"],["👨‍💼","Owners","owners"],["🏍️","Riders","riders"]];
-  return el("div",{},
-    el("div",{class:"overlay",onclick:()=>set({drawer:false})}),
-    el("div",{class:"drawer"},
-      el("div",{style:{background:"linear-gradient(135deg,#1E3A8A,#2563EB)",padding:"36px 22px 24px"}},
-        el("div",{style:{fontSize:"36px",marginBottom:"10px"}},"🍽️"),
-        el("div",{style:{fontSize:"18px",fontWeight:"800",color:"#fff"}},"Zaiqa Admin"),
-        el("div",{style:{fontSize:"12px",color:"rgba(255,255,255,.6)",marginTop:"4px"}},"Control Panel")
-      ),
-      el("div",{style:{flex:"1",padding:"14px 12px",overflowY:"auto"}},
-        ...items.map(([icon,label,key])=>{
-          const active = state.tab===key;
-          return el("div",{style:{display:"flex",alignItems:"center",gap:"14px",padding:"14px 16px",borderRadius:"14px",marginBottom:"4px",cursor:"pointer",background:active?"linear-gradient(135deg,#EEF2FF,#DBEAFE)":"transparent",color:active?"#2563EB":"#475569",fontWeight:active?"700":"500",fontSize:"14px"},onclick:()=>set({tab:key,drawer:false})},
-            el("span",{style:{fontSize:"20px"}},icon), label
-          );
-        })
-      ),
-      el("div",{style:{padding:"14px 12px",borderTop:"1px solid #EEF2FF"}},
-        el("div",{style:{display:"flex",alignItems:"center",gap:"14px",padding:"14px 16px",borderRadius:"14px",cursor:"pointer",background:"#FEF2F2",color:"#DC2626",fontWeight:"600",fontSize:"14px"},onclick:()=>set({page:"login",drawer:false})},
-          el("span",{style:{fontSize:"20px"}},"🚪"), "Logout"
-        )
-      )
-    )
-  );
+function toggleRest(id, val) {
+  dbPatch("restaurants", id, {active: val}).then(function(){ /* silent */ });
+}
+function delRest(id, name) {
+  if (!confirm("Delete " + name + "?")) return;
+  dbDelete("restaurants", id).then(loadAll);
 }
 
-// ── DASHBOARD ────────────────────────────
-function dashTab() {
-  const {orders,customers,restaurants,riders} = state;
-  const revenue = orders.filter(o=>o.status==="Delivered").reduce((a,o)=>a+(o.total||0),0);
-  const pending = orders.filter(o=>["Pending","Preparing"].includes(o.status)).length;
-  const today = orders.filter(o=>new Date(o.created_at).toDateString()===new Date().toDateString()).length;
-  const stats = [["📦","Total Orders",orders.length,"#2563EB"],["💰","Revenue","₹"+revenue.toLocaleString(),"#16A34A"],["👥","Customers",customers.length,"#7C3AED"],["🏪","Restaurants",restaurants.length,"#D97706"],["⏳","Pending",pending,"#DC2626"],["📅","Today",today,"#0891B2"]];
-  return el("div",{},
-    el("div",{style:{fontSize:"13px",color:"#64748B",marginBottom:"16px"}},new Date().toLocaleDateString("en-IN",{weekday:"long",day:"numeric",month:"long"})),
-    el("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginBottom:"24px"}},
-      ...stats.map(([icon,label,val,color])=>
-        el("div",{class:"card",style:{marginBottom:"0",display:"flex",alignItems:"center",gap:"12px"}},
-          el("div",{style:{fontSize:"28px"}}),icon,
-          el("div",{},
-            el("div",{style:{fontSize:"22px",fontWeight:"900",color}}),String(val),
-            el("div",{style:{fontSize:"11px",color:"#94A3B8",marginTop:"2px"}}),label
-          )
-        )
-      )
-    ),
-    el("div",{style:{fontSize:"16px",fontWeight:"700",color:"#1E3A8A",marginBottom:"12px"}},"Recent Orders"),
-    ...orders.slice(0,5).map(o=>
-      el("div",{class:"card",style:{display:"flex",justifyContent:"space-between",alignItems:"center"}},
-        el("div",{},
-          el("div",{style:{fontWeight:"700",fontSize:"13px"}}),o.customer_name||"Customer",
-          el("div",{style:{fontSize:"12px",color:"#64748B",marginTop:"2px"}}),(o.restaurant_name||"")+" • ₹"+(o.total||0)
-        ),
-        badge(o.status, statusColor(o.status))
-      )
-    )
-  );
-}
-
-// ── RESTAURANTS ──────────────────────────
-function restTab() {
-  return el("div",{},
-    el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"18px"}},
-      el("div",{style:{fontSize:"18px",fontWeight:"700",color:"#1E3A8A"}},"🏪 Restaurants ("+state.restaurants.length+")"),
-      el("button",{class:"btn-ghost",style:{padding:"10px 18px"},onclick:()=>set({modal:{type:"addRest",data:{name:"",cuisine:"",rating:4.0,delivery_time:"25-35 min",price_range:"₹₹",image:"🍛",tag:"",category:"",has_veg:true,has_nonveg:true,is_halal:false,active:true}}})},"+ Add")
-    ),
-    ...state.restaurants.map(r=>
-      el("div",{class:"card"},
-        el("div",{style:{display:"flex",gap:"12px",alignItems:"center",marginBottom:"12px"}},
-          el("div",{style:{fontSize:"36px",width:"52px",height:"52px",background:"#F0F4FF",borderRadius:"12px",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:"0"}}),r.image||"🍛",
-          el("div",{style:{flex:"1"}},
-            el("div",{style:{fontWeight:"700",fontSize:"15px"}}),r.name,
-            el("div",{style:{fontSize:"12px",color:"#64748B",marginTop:"3px"}}),(r.cuisine||"")+" • ⭐"+(r.rating||4)+" • "+(r.delivery_time||"")
-          ),
-          el("div",{style:{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"6px"}},
-            tog(r.active, async v=>{await SB.from("restaurants").update({active:v}).eq("id",r.id);loadAll();}),
-            el("div",{style:{fontSize:"10px",fontWeight:"700",color:r.active?"#16A34A":"#94A3B8"}}),r.active?"Live":"Off"
-          )
-        ),
-        el("div",{style:{display:"flex",gap:"6px",marginBottom:"12px",flexWrap:"wrap"}},
-          r.has_veg?badge("🥦 Veg","#16A34A"):null,
-          r.has_nonveg?badge("🍗 Non-Veg","#DC2626"):null,
-          r.is_halal?badge("☪️ Halal","#0891B2"):null
-        ),
-        el("div",{style:{display:"flex",gap:"8px"}},
-          el("button",{class:"btn-ghost",style:{flex:"1",fontSize:"12px",padding:"9px"},onclick:()=>set({modal:{type:"menu",rid:r.id,rname:r.name}})},"📋 Menu"),
-          el("button",{class:"btn-ghost",style:{flex:"1",fontSize:"12px",padding:"9px"},onclick:()=>set({modal:{type:"addRest",editId:r.id,data:{...r}}})},"✏️ Edit"),
-          el("button",{class:"btn-danger",onclick:async()=>{if(confirm("Delete "+r.name+"?")){await SB.from("restaurants").delete().eq("id",r.id);loadAll();}}},"🗑️")
-        )
-      )
-    )
-  );
-}
-
-// ── ORDERS ───────────────────────────────
-function ordTab() {
-  const filters = ["","Pending","Preparing","On the Way","Delivered","Cancelled"];
-  const filtered = state.orderFilter ? state.orders.filter(o=>o.status===state.orderFilter) : state.orders;
-  return el("div",{},
-    el("div",{style:{fontSize:"18px",fontWeight:"700",color:"#1E3A8A",marginBottom:"14px"}},"📋 Orders ("+filtered.length+")"),
-    el("div",{style:{display:"flex",gap:"8px",overflowX:"auto",marginBottom:"18px",paddingBottom:"4px"}},
-      ...filters.map(f=>el("button",{style:{background:state.orderFilter===f?"#2563EB":"#fff",color:state.orderFilter===f?"#fff":"#64748B",border:"1px solid #DBEAFE",padding:"7px 14px",borderRadius:"20px",fontWeight:"600",fontSize:"12px",cursor:"pointer",whiteSpace:"nowrap"},onclick:()=>set({orderFilter:f})},f||"All"))
-    ),
-    ...filtered.map(o=>
-      el("div",{class:"card"},
-        el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:"10px"}},
-          el("div",{},
-            el("div",{style:{fontWeight:"700",fontSize:"14px"}}),o.customer_name||"Customer",
-            el("div",{style:{fontSize:"13px",fontWeight:"700",color:"#2563EB",marginTop:"2px"}}),"₹"+(o.total||0),
-            el("div",{style:{fontSize:"11px",color:"#94A3B8",marginTop:"2px"}}),new Date(o.created_at).toLocaleString("en-IN",{dateStyle:"short",timeStyle:"short"})
-          ),
-          badge(o.status, statusColor(o.status))
-        ),
-        el("div",{style:{background:"#F8FAFF",borderRadius:"10px",padding:"10px 12px",marginBottom:"10px",fontSize:"12px",color:"#475569",lineHeight:"1.9"}},
-          "📍 "+(o.customer_address||"No address")+" | 📱 "+(o.customer_phone||"")+" | 🏪 "+(o.restaurant_name||"")
-        ),
-        el("select",{style:{width:"100%",padding:"10px 12px",borderRadius:"10px",border:"2px solid #E8EEFF",background:"#F8FAFF",color:"#1a1a2e",fontSize:"13px",outline:"none",fontFamily:"Poppins"},onchange:async e=>{await SB.from("orders").update({status:e.target.value}).eq("id",o.id);loadAll();}},
-          ...["Pending","Preparing","On the Way","Delivered","Cancelled"].map(s=>el("option",{value:s,...(s===o.status?{selected:""}:{})},s))
-        )
-      )
-    )
-  );
-}
-
-// ── CUSTOMERS ─────────────────────────────
-function custTab() {
-  return el("div",{},
-    el("div",{style:{fontSize:"18px",fontWeight:"700",color:"#1E3A8A",marginBottom:"16px"}},"👥 Customers ("+state.customers.length+")"),
-    ...state.customers.map(cu=>
-      el("div",{class:"card",style:{display:"flex",alignItems:"center",gap:"14px"}},
-        el("div",{style:{width:"46px",height:"46px",borderRadius:"50%",background:"#EEF2FF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",flexShrink:"0"}}),cu.profile_emoji||"👤",
-        el("div",{style:{flex:"1"}},
-          el("div",{style:{fontWeight:"700",fontSize:"14px"}}),cu.name||"Unknown",
-          el("div",{style:{fontSize:"12px",color:"#64748B",marginTop:"2px"}}),(cu.phone||cu.email||"No contact"),
-          el("div",{style:{fontSize:"12px",color:"#2563EB",fontWeight:"600",marginTop:"3px"}}),(cu.total_orders||0)+" orders • ₹"+(cu.total_spent||0).toLocaleString()
-        )
-      )
-    )
-  );
-}
-
-// ── OWNERS ────────────────────────────────
-function ownTab() {
-  return el("div",{},
-    el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"18px"}},
-      el("div",{style:{fontSize:"18px",fontWeight:"700",color:"#1E3A8A"}},"👨‍💼 Owners ("+state.owners.length+")"),
-      el("button",{class:"btn-ghost",style:{padding:"10px 18px"},onclick:()=>set({modal:{type:"addOwner",data:{name:"",email:"",phone:"",password:"",restaurant_id:""}}})},"+ Add")
-    ),
-    ...state.owners.map(o=>{
-      const rest = state.restaurants.find(r=>r.id===o.restaurant_id);
-      return el("div",{class:"card",style:{display:"flex",alignItems:"center",gap:"14px"}},
-        el("div",{style:{width:"46px",height:"46px",borderRadius:"50%",background:"#EDE9FE",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",flexShrink:"0"}},"👨‍💼"),
-        el("div",{style:{flex:"1"}},
-          el("div",{style:{fontWeight:"700",fontSize:"14px"}}),o.name,
-          el("div",{style:{fontSize:"12px",color:"#64748B",marginTop:"2px"}}),o.email,
-          el("div",{style:{fontSize:"12px",color:"#2563EB",fontWeight:"600",marginTop:"3px"}}),rest?"🏪 "+rest.name:"No restaurant"
-        ),
-        el("button",{class:"btn-danger",onclick:async()=>{if(confirm("Remove "+o.name+"?")){await SB.from("restaurant_owners").delete().eq("id",o.id);loadAll();}}},"🗑️")
-      );
-    })
-  );
-}
-
-// ── RIDERS ────────────────────────────────
-function riderTab() {
-  return el("div",{},
-    el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"18px"}},
-      el("div",{style:{fontSize:"18px",fontWeight:"700",color:"#1E3A8A"}},"🏍️ Riders ("+state.riders.length+")"),
-      el("button",{class:"btn-ghost",style:{padding:"10px 18px"},onclick:()=>set({modal:{type:"addRider",data:{name:"",phone:"",password:"",area:"",vehicle:"Bike",emoji:"🏍️"}}})},"+ Add Rider")
-    ),
-    state.riders.length === 0 ?
-      el("div",{class:"card",style:{textAlign:"center",padding:"50px 20px"}},
-        el("div",{style:{fontSize:"52px",marginBottom:"12px"}},"🏍️"),
-        el("div",{style:{fontSize:"15px",fontWeight:"700",color:"#475569",marginBottom:"6px"}},"No riders yet"),
-        el("div",{style:{fontSize:"13px",color:"#94A3B8",marginBottom:"20px"}},"Add riders so they can log in and accept deliveries"),
-        el("button",{class:"btn-ghost",onclick:()=>set({modal:{type:"addRider",data:{name:"",phone:"",password:"",area:"",vehicle:"Bike",emoji:"🏍️"}}})},"+ Add First Rider")
-      ) : null,
-    ...state.riders.map(r=>{
-      const total = state.orders.filter(o=>o.rider_name===r.name&&o.status==="Delivered").length;
-      const today = state.orders.filter(o=>o.rider_name===r.name&&o.status==="Delivered"&&new Date(o.created_at).toDateString()===new Date().toDateString()).length;
-      return el("div",{class:"card"},
-        el("div",{style:{display:"flex",gap:"12px",alignItems:"center",marginBottom:"14px"}},
-          el("div",{style:{fontSize:"32px",width:"54px",height:"54px",background:"#EEF2FF",borderRadius:"14px",display:"flex",alignItems:"center",justifyContent:"center",flexShrink:"0"}}),r.emoji||"🏍️",
-          el("div",{style:{flex:"1"}},
-            el("div",{style:{fontWeight:"800",fontSize:"15px"}}),r.name,
-            el("div",{style:{fontSize:"12px",color:"#64748B",marginTop:"3px"}}),"📱 "+r.phone,
-            el("div",{style:{fontSize:"12px",color:"#94A3B8",marginTop:"2px"}}),"📍 "+(r.area||"No area")+" · "+r.vehicle
-          ),
-          el("div",{style:{display:"flex",flexDirection:"column",alignItems:"flex-end",gap:"6px"}},
-            tog(r.active, async v=>{await SB.from("delivery_riders").update({active:v}).eq("id",r.id);loadAll();}),
-            el("div",{style:{fontSize:"10px",fontWeight:"700",color:r.active?"#16A34A":"#94A3B8"}}),r.active?"Online":"Offline"
-          )
-        ),
-        el("div",{style:{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:"10px",marginBottom:"12px"}},
-          el("div",{style:{background:"#EEF2FF",borderRadius:"10px",padding:"10px",textAlign:"center"}},el("div",{style:{fontSize:"20px",fontWeight:"800",color:"#2563EB"}}),today,el("div",{style:{fontSize:"10px",color:"#94A3B8",marginTop:"2px"}},"Today")),
-          el("div",{style:{background:"#DCFCE7",borderRadius:"10px",padding:"10px",textAlign:"center"}},el("div",{style:{fontSize:"20px",fontWeight:"800",color:"#16A34A"}}),total,el("div",{style:{fontSize:"10px",color:"#94A3B8",marginTop:"2px"}},"Total")),
-          el("div",{style:{background:"#FEF3C7",borderRadius:"10px",padding:"10px",textAlign:"center"}},el("div",{style:{fontSize:"20px",fontWeight:"800",color:"#D97706"}}),"₹"+(total*30),el("div",{style:{fontSize:"10px",color:"#94A3B8",marginTop:"2px"}},"Earned"))
-        ),
-        el("button",{class:"btn-danger",style:{width:"100%",padding:"10px"},onclick:async()=>{if(confirm("Remove "+r.name+"?")){await SB.from("delivery_riders").delete().eq("id",r.id);loadAll();}}},"🗑️ Remove Rider")
-      );
-    })
-  );
-}
-
-// ── MODAL ─────────────────────────────────
-function modalView() {
-  const {type, data, editId, rid, rname} = state.modal;
-  const d = {...data};
-  const wrap = el("div",{},
-    el("div",{class:"modal-bg",onclick:()=>set({modal:null})}),
-    el("div",{class:"modal-box"})
-  );
-  const box = wrap.lastChild;
-  box.appendChild(el("div",{style:{width:"36px",height:"4px",borderRadius:"2px",background:"#E2E8F0",margin:"0 auto 20px"}}));
-
-  if (type === "addRest") {
-    box.appendChild(el("div",{style:{fontSize:"17px",fontWeight:"800",color:"#1E3A8A",marginBottom:"18px"}}, editId?"✏️ Edit Restaurant":"🏪 New Restaurant"));
-    const fields = [["RESTAURANT NAME","text",d.name,v=>d.name=v,"e.g. Spice Garden"],["CUISINE","text",d.cuisine,v=>d.cuisine=v,"e.g. North Indian"],["EMOJI","text",d.image,v=>d.image=v,"🍛 🍕 🍔"],["TAG LINE","text",d.tag,v=>d.tag=v,"Best in town"],["DELIVERY TIME","text",d.delivery_time,v=>d.delivery_time=v,"25-35 min"],["RATING","number",d.rating,v=>d.rating=parseFloat(v)||4.0,"4.5"]];
-    fields.forEach(([lbl,type,val,cb,ph])=>{
-      box.appendChild(el("div",{style:{fontSize:"11px",fontWeight:"700",color:"#94A3B8",letterSpacing:"1px",marginBottom:"6px"}},lbl));
-      box.appendChild(el("input",{class:"inp",type,placeholder:ph,value:val||"",oninput:e=>cb(e.target.value)}));
+function ordContent() {
+  var filters = ["","Pending","Preparing","On the Way","Delivered","Cancelled"];
+  var filtered = state.filterStatus ? state.orders.filter(function(o){return o.status===state.filterStatus;}) : state.orders;
+  var html = '<div style="font-size:17px;font-weight:700;color:#1E3A8A;margin-bottom:12px">📋 Orders (' + filtered.length + ')</div>';
+  html += '<div style="display:flex;gap:7px;overflow-x:auto;margin-bottom:14px;padding-bottom:3px">';
+  filters.forEach(function(f) {
+    var active = state.filterStatus === f;
+    html += '<button onclick="setFilter(\'' + f + '\')" style="background:' + (active?"#2563EB":"#fff") + ';color:' + (active?"#fff":"#64748B") + ';border:1px solid #DBEAFE;padding:7px 13px;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">' + (f||"All") + '</button>';
+  });
+  html += '</div>';
+  filtered.forEach(function(o) {
+    var sc = {Delivered:"#16A34A","On the Way":"#7C3AED",Preparing:"#D97706",Cancelled:"#DC2626",Pending:"#2563EB"}[o.status]||"#64748B";
+    html += '<div class="card"><div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px"><div><div style="font-weight:700;font-size:14px">' + (o.customer_name||"Customer") + '</div><div style="font-size:13px;font-weight:700;color:#2563EB;margin-top:2px">₹' + (o.total||0) + '</div><div style="font-size:11px;color:#94A3B8;margin-top:2px">' + new Date(o.created_at).toLocaleString("en-IN",{dateStyle:"short",timeStyle:"short"}) + '</div></div><span style="background:' + sc + '20;color:' + sc + ';padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600">' + o.status + '</span></div>';
+    html += '<div style="background:#F8FAFF;border-radius:9px;padding:9px 11px;margin-bottom:10px;font-size:12px;color:#475569;line-height:1.9">📍 ' + (o.customer_address||"No address") + '<br>📱 ' + (o.customer_phone||"No phone") + '<br>🏪 ' + (o.restaurant_name||"") + (o.rider_name?"<br>🏍️ "+o.rider_name:"") + '</div>';
+    html += '<select id="sel-' + o.id + '" onchange="updateOrderStatus(\'' + o.id + '\',this.value)" style="width:100%;padding:9px 11px;border-radius:9px;border:2px solid #E8EEFF;background:#F8FAFF;font-size:13px;outline:none">';
+    ["Pending","Preparing","On the Way","Delivered","Cancelled"].forEach(function(s) {
+      html += '<option value="' + s + '"' + (s===o.status?" selected":"") + '>' + s + '</option>';
     });
-    [["Veg Options 🥦","has_veg"],["Non-Veg 🍗","has_nonveg"],["Halal ☪️","is_halal"],["Active / Live","active"]].forEach(([lbl,key])=>{
-      const row = el("div",{style:{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"12px 0",borderBottom:"1px solid #F0F4FF"}},
-        el("span",{style:{fontSize:"14px",fontWeight:"500"}},lbl), tog(d[key],v=>{d[key]=v;state.modal.data=d;render();})
-      );
-      box.appendChild(row);
-    });
-    box.appendChild(el("div",{style:{display:"flex",gap:"12px",marginTop:"20px"}},
-      el("button",{class:"btn-ghost",style:{flex:"1",padding:"13px"},onclick:()=>set({modal:null})},"Cancel"),
-      el("button",{class:"btn-primary",style:{flex:"2"},onclick:async()=>{
-        if(!d.name){alert("Name required!");return;}
-        if(editId) await SB.from("restaurants").update(d).eq("id",editId);
-        else await SB.from("restaurants").insert([d]);
-        set({modal:null});loadAll();
-      }}, editId?"Save Changes":"Add Restaurant")
-    ));
+    html += '</select></div>';
+  });
+  return html;
+}
+
+function setFilter(f) { state.filterStatus = f; renderApp(); }
+function updateOrderStatus(id, status) {
+  dbPatch("orders", id, {status: status}).then(function(){ /* done */ });
+}
+
+function custContent() {
+  var html = '<div style="font-size:17px;font-weight:700;color:#1E3A8A;margin-bottom:14px">👥 Customers (' + state.customers.length + ')</div>';
+  if (!state.customers.length) return html + '<div class="card" style="text-align:center;padding:40px"><div style="font-size:13px;color:#94A3B8">No customers yet</div></div>';
+  state.customers.forEach(function(c) {
+    html += '<div class="card" style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:50%;background:#EEF2FF;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">' + (c.profile_emoji||"👤") + '</div><div style="flex:1"><div style="font-weight:700;font-size:14px">' + (c.name||"Unknown") + '</div><div style="font-size:12px;color:#64748B;margin-top:2px">' + (c.phone||c.email||"") + '</div><div style="font-size:12px;font-weight:600;color:#2563EB;margin-top:2px">' + (c.total_orders||0) + ' orders · ₹' + ((c.total_spent||0).toLocaleString()) + '</div></div></div>';
+  });
+  return html;
+}
+
+function ownContent() {
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:17px;font-weight:700;color:#1E3A8A">👨‍💼 Owners</div><button class="gbtn" onclick="openModal(\'addOwner\')">+ Add</button></div>';
+  if (!state.owners.length) html += '<div class="card" style="text-align:center;padding:40px"><div style="color:#94A3B8">No owners yet</div></div>';
+  state.owners.forEach(function(o) {
+    var rest = state.restaurants.find(function(r){return r.id===o.restaurant_id;});
+    html += '<div class="card" style="display:flex;align-items:center;gap:12px"><div style="width:44px;height:44px;border-radius:50%;background:#EDE9FE;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0">👨‍💼</div><div style="flex:1"><div style="font-weight:700;font-size:14px">' + o.name + '</div><div style="font-size:12px;color:#64748B;margin-top:2px">' + o.email + '</div><div style="font-size:12px;font-weight:600;color:#2563EB;margin-top:2px">' + (rest?"🏪 "+rest.name:"No restaurant") + '</div></div><button class="dbtn" onclick="delOwner(\'' + o.id + '\',\'' + o.name.replace(/'/g,"") + '\')">🗑️</button></div>';
+  });
+  return html;
+}
+function delOwner(id, name) { if(!confirm("Remove "+name+"?")) return; dbDelete("restaurant_owners",id).then(loadAll); }
+
+function riderContent() {
+  var html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:17px;font-weight:700;color:#1E3A8A">🏍️ Riders</div><button class="gbtn" onclick="openModal(\'addRider\')">+ Add Rider</button></div>';
+  if (!state.riders.length) {
+    html += '<div class="card" style="text-align:center;padding:50px 20px"><div style="font-size:52px;margin-bottom:10px">🏍️</div><div style="font-size:15px;font-weight:600;color:#475569;margin-bottom:6px">No riders yet</div><div style="font-size:13px;color:#94A3B8;margin-bottom:18px">Add riders so they can log in and accept deliveries</div><button class="gbtn" onclick="openModal(\'addRider\')">+ Add First Rider</button></div>';
+    return html;
+  }
+  state.riders.forEach(function(r) {
+    var total = state.orders.filter(function(o){return o.rider_name===r.name&&o.status==="Delivered";}).length;
+    var today = state.orders.filter(function(o){return o.rider_name===r.name&&o.status==="Delivered"&&new Date(o.created_at).toDateString()===new Date().toDateString();}).length;
+    html += '<div class="card"><div style="display:flex;gap:10px;align-items:center;margin-bottom:12px"><div style="font-size:30px;width:52px;height:52px;background:#EEF2FF;border-radius:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0">' + (r.emoji||"🏍️") + '</div><div style="flex:1"><div style="font-weight:800;font-size:15px">' + r.name + '</div><div style="font-size:12px;color:#64748B;margin-top:2px">📱 ' + r.phone + '</div><div style="font-size:12px;color:#94A3B8;margin-top:1px">📍 ' + (r.area||"No area") + ' · ' + (r.vehicle||"Bike") + '</div></div><div><label style="display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer"><input type="checkbox" ' + (r.active?"checked":"") + ' onchange="toggleRider(\'' + r.id + '\',this.checked)" style="width:18px;height:18px;cursor:pointer"><span style="font-size:10px;font-weight:700;color:' + (r.active?"#16A34A":"#94A3B8") + '">' + (r.active?"Online":"Offline") + '</span></label></div></div>';
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px"><div style="background:#EEF2FF;border-radius:9px;padding:9px;text-align:center"><div style="font-size:18px;font-weight:800;color:#2563EB">' + today + '</div><div style="font-size:10px;color:#94A3B8;margin-top:1px">Today</div></div><div style="background:#DCFCE7;border-radius:9px;padding:9px;text-align:center"><div style="font-size:18px;font-weight:800;color:#16A34A">' + total + '</div><div style="font-size:10px;color:#94A3B8;margin-top:1px">Total</div></div><div style="background:#FEF3C7;border-radius:9px;padding:9px;text-align:center"><div style="font-size:18px;font-weight:800;color:#D97706">₹' + (total*30) + '</div><div style="font-size:10px;color:#94A3B8;margin-top:1px">Earned</div></div></div>';
+    html += '<button class="dbtn" style="width:100%;padding:9px" onclick="delRider(\'' + r.id + '\',\'' + r.name.replace(/'/g,"") + '\')">🗑️ Remove Rider</button></div>';
+  });
+  return html;
+}
+function toggleRider(id, val) { dbPatch("delivery_riders", id, {active: val}); }
+function delRider(id, name) { if(!confirm("Remove "+name+"?")) return; dbDelete("delivery_riders",id).then(loadAll); }
+
+// MODALS
+function openModal(type, a, b) { state.modal = {type:type, a:a, b:b}; renderApp(); }
+function closeModal() { state.modal = null; renderApp(); }
+
+function renderModal() {
+  var m = state.modal;
+  var wrap = document.createElement("div");
+  wrap.innerHTML = '<div class="mbg" onclick="closeModal()"></div><div class="mbox" id="mbox"><div style="width:34px;height:4px;border-radius:2px;background:#E2E8F0;margin:0 auto 18px"></div></div>';
+  document.getElementById("app").appendChild(wrap);
+  var box = document.getElementById("mbox");
+
+  if (m.type === "addRest") {
+    box.innerHTML += '<div style="font-size:17px;font-weight:800;color:#1E3A8A;margin-bottom:16px">🏪 Add Restaurant</div><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">NAME</div><input class="inp" id="rn" placeholder="Restaurant name"><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">CUISINE</div><input class="inp" id="rc" placeholder="e.g. North Indian"><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">EMOJI</div><input class="inp" id="re" placeholder="🍛 🍕 🍔" style="margin-bottom:12px"><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">DELIVERY TIME</div><input class="inp" id="rt" placeholder="25-35 min" value="25-35 min"><div style="display:flex;gap:8px;margin-bottom:18px"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="rv" checked style="width:16px;height:16px"> Veg</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="rnv" checked style="width:16px;height:16px"> Non-Veg</label><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="rh" style="width:16px;height:16px"> Halal</label></div><button class="pbtn" onclick="submitRest()">Add Restaurant</button>';
   }
 
-  else if (type === "menu") {
-    box.appendChild(el("div",{style:{fontSize:"17px",fontWeight:"800",color:"#1E3A8A",marginBottom:"16px"}},"📋 "+rname));
-    const itemList = el("div",{style:{marginBottom:"18px"}});
-    box.appendChild(itemList);
-    const loadItems = async () => {
-      const {data:items} = await SB.from("menu_items").select("*").eq("restaurant_id",rid).order("created_at",{ascending:false});
-      itemList.innerHTML = "";
-      if(!items||!items.length){itemList.appendChild(el("div",{style:{textAlign:"center",padding:"20px",color:"#94A3B8",fontSize:"13px"}},"No items yet"));return;}
-      items.forEach(item=>{
-        itemList.appendChild(el("div",{style:{display:"flex",alignItems:"center",gap:"10px",padding:"11px 0",borderBottom:"1px solid #F0F4FF"}},
-          el("div",{style:{flex:"1"}},
-            el("div",{style:{fontWeight:"600",fontSize:"13px"}}),item.name,
-            el("div",{style:{fontSize:"12px",color:"#64748B",marginTop:"2px"}}),"₹"+item.price+" • "+(item.veg?"🥦":"🍗")+(item.bestseller?" ⭐":"")
-          ),
-          el("button",{class:"btn-danger",style:{padding:"6px 10px"},onclick:async()=>{await SB.from("menu_items").delete().eq("id",item.id);loadItems();}},"🗑️")
-        ));
-      });
-    };
-    loadItems();
-    const nd = {name:"",price:"",veg:true};
-    box.appendChild(el("div",{style:{background:"#F8FAFF",borderRadius:"12px",padding:"14px",border:"2px solid #E8EEFF"}},
-      el("div",{style:{fontSize:"13px",fontWeight:"700",color:"#2563EB",marginBottom:"10px"}},"+ Add Item"),
-      el("input",{class:"inp",placeholder:"Item name",oninput:e=>nd.name=e.target.value}),
-      el("input",{class:"inp",type:"number",placeholder:"Price ₹",oninput:e=>nd.price=e.target.value}),
-      el("div",{style:{display:"flex",gap:"8px",marginBottom:"10px"}},
-        el("button",{class:"btn-ghost",style:{flex:"1",fontSize:"12px"},onclick:()=>nd.veg=true},"🥦 Veg"),
-        el("button",{style:{flex:"1",fontSize:"12px",background:"#FEE2E2",color:"#DC2626",border:"1px solid #FECACA",borderRadius:"10px",padding:"10px",cursor:"pointer"},onclick:()=>nd.veg=false},"🍗 Non-Veg")
-      ),
-      el("button",{class:"btn-primary",onclick:async()=>{
-        if(!nd.name||!nd.price){alert("Name and price required!");return;}
-        await SB.from("menu_items").insert([{restaurant_id:rid,name:nd.name,price:parseFloat(nd.price),veg:nd.veg}]);
-        loadItems();
-      }},"✅ Add Item")
-    ));
-    box.appendChild(el("button",{class:"btn-ghost",style:{width:"100%",marginTop:"12px",padding:"12px"},onclick:()=>set({modal:null})},"Close"));
+  else if (m.type === "menu") {
+    box.innerHTML += '<div style="font-size:17px;font-weight:800;color:#1E3A8A;margin-bottom:14px">📋 ' + m.b + '</div><div id="itemlist"><div style="text-align:center;color:#94A3B8;font-size:13px;padding:10px">Loading...</div></div><div style="background:#F8FAFF;border-radius:12px;padding:14px;border:2px solid #E8EEFF;margin-top:14px"><div style="font-size:13px;font-weight:700;color:#2563EB;margin-bottom:10px">+ Add Item</div><input class="inp" id="iname" placeholder="Item name"><input class="inp" id="iprice" type="number" placeholder="Price ₹" style="margin-bottom:10px"><div style="display:flex;gap:8px;margin-bottom:12px"><button class="gbtn" style="flex:1" onclick="window._iv=true">🥦 Veg</button><button style="flex:1;background:#FEE2E2;color:#DC2626;border:1px solid #FECACA;padding:9px;border-radius:9px;font-weight:600;font-size:13px;cursor:pointer" onclick="window._iv=false">🍗 Non-Veg</button></div><button class="pbtn" onclick="addMenuItem(\'' + m.a + '\')">✅ Add Item</button></div><button class="gbtn" style="width:100%;margin-top:12px;padding:11px" onclick="closeModal()">Close</button>';
+    window._iv = true;
+    loadMenuItems(m.a);
   }
 
-  else if (type === "addOwner") {
-    box.appendChild(el("div",{style:{fontSize:"17px",fontWeight:"800",color:"#1E3A8A",marginBottom:"18px"}},"👨‍💼 New Owner"));
-    [["FULL NAME","text",d.name,v=>d.name=v,"Owner name"],["EMAIL","email",d.email,v=>d.email=v,"email@example.com"],["PHONE","tel",d.phone,v=>d.phone=v,"Phone number"],["PASSWORD","password",d.password,v=>d.password=v,"Set password"]].forEach(([lbl,type,val,cb,ph])=>{
-      box.appendChild(el("div",{style:{fontSize:"11px",fontWeight:"700",color:"#94A3B8",letterSpacing:"1px",marginBottom:"6px"}},lbl));
-      box.appendChild(el("input",{class:"inp",type,placeholder:ph,value:val||"",oninput:e=>cb(e.target.value)}));
-    });
-    box.appendChild(el("div",{style:{fontSize:"11px",fontWeight:"700",color:"#94A3B8",letterSpacing:"1px",marginBottom:"6px"}},"RESTAURANT"));
-    const sel = el("select",{class:"inp",onchange:e=>d.restaurant_id=e.target.value},
-      el("option",{value:""},"Select restaurant"),
-      ...state.restaurants.map(r=>el("option",{value:r.id},r.name))
-    );
-    box.appendChild(sel);
-    box.appendChild(el("div",{style:{display:"flex",gap:"12px",marginTop:"12px"}},
-      el("button",{class:"btn-ghost",style:{flex:"1",padding:"13px"},onclick:()=>set({modal:null})},"Cancel"),
-      el("button",{class:"btn-primary",style:{flex:"2"},onclick:async()=>{
-        if(!d.name||!d.email||!d.password){alert("Fill required fields!");return;}
-        const {error} = await SB.from("restaurant_owners").insert([{name:d.name,email:d.email,phone:d.phone,password:d.password,restaurant_id:d.restaurant_id||null}]);
-        if(error){alert(error.message);return;}
-        set({modal:null});loadAll();
-      }},"Add Owner")
-    ));
+  else if (m.type === "addOwner") {
+    var opts = state.restaurants.map(function(r){ return '<option value="'+r.id+'">'+r.name+'</option>'; }).join("");
+    box.innerHTML += '<div style="font-size:17px;font-weight:800;color:#1E3A8A;margin-bottom:16px">👨‍💼 Add Owner</div><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">NAME</div><input class="inp" id="on" placeholder="Owner name"><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">EMAIL</div><input class="inp" id="oe" type="email" placeholder="email@example.com"><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">PHONE</div><input class="inp" id="op" type="tel" placeholder="Phone"><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">PASSWORD</div><input class="inp" id="opw" type="password" placeholder="Set password"><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">RESTAURANT</div><select class="inp" id="or" style="margin-bottom:18px"><option value="">Select restaurant</option>' + opts + '</select><button class="pbtn" onclick="submitOwner()">Add Owner</button>';
   }
 
-  else if (type === "addRider") {
-    box.appendChild(el("div",{style:{fontSize:"17px",fontWeight:"800",color:"#1E3A8A",marginBottom:"6px"}},"🏍️ Add Rider"));
-    box.appendChild(el("div",{style:{fontSize:"13px",color:"#64748B",marginBottom:"18px"}},"Rider logs in with phone + password on the Delivery app"));
-    [["FULL NAME","text",d.name,v=>d.name=v,"Rider name"],["PHONE","tel",d.phone,v=>d.phone=v,"Mobile number"],["PASSWORD","password",d.password,v=>d.password=v,"Set password"],["DELIVERY AREA","text",d.area,v=>d.area=v,"e.g. Coimbatore North"]].forEach(([lbl,type,val,cb,ph])=>{
-      box.appendChild(el("div",{style:{fontSize:"11px",fontWeight:"700",color:"#94A3B8",letterSpacing:"1px",marginBottom:"6px"}},lbl));
-      box.appendChild(el("input",{class:"inp",type,placeholder:ph,value:val||"",oninput:e=>cb(e.target.value)}));
-    });
-    box.appendChild(el("div",{style:{fontSize:"11px",fontWeight:"700",color:"#94A3B8",letterSpacing:"1px",marginBottom:"6px"}},"VEHICLE"));
-    box.appendChild(el("select",{class:"inp",onchange:e=>d.vehicle=e.target.value},
-      ...["Bike","Scooter","Bicycle","Car","Auto"].map(v=>el("option",{value:v,...(v===d.vehicle?{selected:""}:{})},v))
-    ));
-    box.appendChild(el("div",{style:{fontSize:"11px",fontWeight:"700",color:"#94A3B8",letterSpacing:"1px",marginBottom:"8px"}},"EMOJI"));
-    box.appendChild(el("div",{style:{display:"flex",gap:"10px",marginBottom:"18px"}},
-      ...["🏍️","🛵","🚴","🚗","🛺"].map(e=>
-        el("div",{style:{width:"46px",height:"46px",borderRadius:"10px",background:d.emoji===e?"#DBEAFE":"#F8FAFF",border:d.emoji===e?"2px solid #2563EB":"2px solid #E8EEFF",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"24px",cursor:"pointer"},onclick:()=>{d.emoji=e;state.modal.data=d;render();}},e)
-      )
-    ));
-    box.appendChild(el("div",{style:{display:"flex",gap:"12px"}},
-      el("button",{class:"btn-ghost",style:{flex:"1",padding:"13px"},onclick:()=>set({modal:null})},"Cancel"),
-      el("button",{class:"btn-primary",style:{flex:"2"},onclick:async()=>{
-        if(!d.name||!d.phone||!d.password){alert("Name, phone and password required!");return;}
-        const {error} = await SB.from("delivery_riders").insert([{name:d.name,phone:d.phone,password:d.password,area:d.area||"",vehicle:d.vehicle||"Bike",emoji:d.emoji||"🏍️",active:true}]);
-        if(error){alert(error.message);return;}
-        set({modal:null});loadAll();
-      }},"✅ Add Rider")
-    ));
+  else if (m.type === "addRider") {
+    box.innerHTML += '<div style="font-size:17px;font-weight:800;color:#1E3A8A;margin-bottom:6px">🏍️ Add Rider</div><div style="font-size:13px;color:#64748B;margin-bottom:16px">Rider logs in on the Delivery app with phone + password</div><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">FULL NAME</div><input class="inp" id="rdn" placeholder="Rider full name"><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">PHONE</div><input class="inp" id="rdph" type="tel" placeholder="Mobile number"><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">PASSWORD</div><input class="inp" id="rdpw" type="password" placeholder="Set password"><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">AREA</div><input class="inp" id="rda" placeholder="e.g. Coimbatore North"><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:5px">VEHICLE</div><select class="inp" id="rdv" style="margin-bottom:14px"><option>Bike</option><option>Scooter</option><option>Bicycle</option><option>Car</option></select><div style="font-size:11px;font-weight:700;color:#94A3B8;letter-spacing:1px;margin-bottom:8px">EMOJI</div><div style="display:flex;gap:8px;margin-bottom:18px" id="emojiPick"><span onclick="pickEmoji(this,\'🏍️\')" style="font-size:28px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid #2563EB">🏍️</span><span onclick="pickEmoji(this,\'🛵\')" style="font-size:28px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid transparent">🛵</span><span onclick="pickEmoji(this,\'🚴\')" style="font-size:28px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid transparent">🚴</span><span onclick="pickEmoji(this,\'🚗\')" style="font-size:28px;cursor:pointer;padding:6px;border-radius:8px;border:2px solid transparent">🚗</span></div><button class="pbtn" onclick="submitRider()">✅ Add Rider</button>';
+    window._rdEmoji = "🏍️";
   }
-
-  return wrap;
 }
 
-render();
+function loadMenuItems(rid) {
+  dbGet("menu_items", "select=*&restaurant_id=eq."+rid+"&order=created_at.desc").then(function(items) {
+    var el = document.getElementById("itemlist");
+    if (!el) return;
+    if (!items || !items.length) { el.innerHTML = '<div style="text-align:center;color:#94A3B8;font-size:13px;padding:10px">No items yet</div>'; return; }
+    var html = "";
+    items.forEach(function(item) {
+      html += '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #F0F4FF"><div style="font-size:22px">' + (item.veg?"🥦":"🍗") + '</div><div style="flex:1"><div style="font-weight:600;font-size:13px">' + item.name + '</div><div style="font-size:12px;color:#2563EB;font-weight:600">₹' + item.price + '</div></div><button class="dbtn" onclick="delItem(\'' + item.id + '\',\'' + rid + '\')">🗑️</button></div>';
+    });
+    el.innerHTML = html;
+  });
+}
+
+function delItem(id, rid) {
+  dbDelete("menu_items", id).then(function(){ loadMenuItems(rid); });
+}
+
+function addMenuItem(rid) {
+  var n = document.getElementById("iname").value.trim();
+  var p = document.getElementById("iprice").value;
+  if (!n || !p) { alert("Name and price required!"); return; }
+  dbPost("menu_items", {restaurant_id: rid, name: n, price: parseFloat(p), veg: window._iv !== false, bestseller: false}).then(function(){ loadMenuItems(rid); document.getElementById("iname").value=""; document.getElementById("iprice").value=""; });
+}
+
+function submitRest() {
+  var n = document.getElementById("rn").value.trim();
+  if (!n) { alert("Restaurant name required!"); return; }
+  dbPost("restaurants", {name:n, cuisine:document.getElementById("rc").value, image:document.getElementById("re").value||"🍛", delivery_time:document.getElementById("rt").value||"25-35 min", rating:4.0, has_veg:document.getElementById("rv").checked, has_nonveg:document.getElementById("rnv").checked, is_halal:document.getElementById("rh").checked, active:true}).then(function(){ closeModal(); loadAll(); });
+}
+
+function submitOwner() {
+  var n=document.getElementById("on").value.trim(), e=document.getElementById("oe").value.trim(), p=document.getElementById("opw").value;
+  if (!n||!e||!p) { alert("Name, email and password required!"); return; }
+  dbPost("restaurant_owners", {name:n, email:e, phone:document.getElementById("op").value, password:p, restaurant_id:document.getElementById("or").value||null}).then(function(r){ if(r&&r.code){alert("Error: "+r.message);return;} closeModal(); loadAll(); });
+}
+
+function pickEmoji(el, emoji) {
+  window._rdEmoji = emoji;
+  document.querySelectorAll("#emojiPick span").forEach(function(s){ s.style.border="2px solid transparent"; });
+  el.style.border = "2px solid #2563EB";
+}
+
+function submitRider() {
+  var n=document.getElementById("rdn").value.trim(), ph=document.getElementById("rdph").value.trim(), pw=document.getElementById("rdpw").value;
+  if (!n||!ph||!pw) { alert("Name, phone and password required!"); return; }
+  dbPost("delivery_riders", {name:n, phone:ph, password:pw, area:document.getElementById("rda").value, vehicle:document.getElementById("rdv").value, emoji:window._rdEmoji||"🏍️", active:true}).then(function(r){ if(r&&r.code){alert("Error: "+r.message);return;} closeModal(); loadAll(); });
+}
+
+init();
 </script>
 </body>
 </html>
